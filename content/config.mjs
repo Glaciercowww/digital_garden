@@ -2,4 +2,7 @@
 /**
  * @type {import("../config/siteConfig").UserConfig}
  */
-export default {};
+//export default {};
+const config = {
+  showSidebar: true,
+};
