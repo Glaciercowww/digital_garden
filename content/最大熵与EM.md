@@ -1,0 +1,1 @@
+[【机器学习】10、最大熵模型与EM算法_最大熵算法-CSDN博客](https://blog.csdn.net/jiaoyangwm/article/details/81276921)
