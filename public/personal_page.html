@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人网页</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+        }
+        #profile {
+            margin: 20px auto;
+            max-width: 600px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #upload {
+            margin-top: 20px;
+        }
+        #imagePreview {
+            margin-top: 20px;
+            max-width: 100%;
+            display: none;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="profile">
+        <h1>欢迎来到我的个人网页</h1>
+        <p>这里是我的个人简介，介绍我自己的一些信息。</p>
+        <p>联系方式：<a href="mailto:your-email@example.com">your-email@example.com</a></p>
+
+        <div id="upload">
+            <h2>上传图片</h2>
+            <input type="file" id="imageInput" accept="image/*">
+            <img id="imagePreview" alt="图片预览">
+        </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+
+        imageInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    imagePreview.setAttribute('src', event.target.result);
+                    imagePreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+
+</body>
+</html>
