@@ -6,4 +6,4 @@
 
 <a href="/download">下载我的文件</a>
 
-<a href="/贪吃蛇">贪吃蛇小游戏</a>
+<a href="/snake">贪吃蛇小游戏</a>
