@@ -33,6 +33,10 @@
         <h3>玩家排名</h3>
         <ol id="leaderboard-list"></ol>
     </div>
+    
+    <!-- 修改音频文件名称 -->
+    <audio id="gameOverSound" src="niganma.mp3"></audio>
+
     <script>
         const canvas = document.getElementById("gameCanvas");
         const context = canvas.getContext("2d");
@@ -51,6 +55,7 @@
         function gameLoop() {
             updateSnake();
             if (checkCollision()) {
+                gameOver(); // 播放游戏结束音效
                 saveScore(); // 保存分数到排行榜
                 resetGame();
                 showLeaderboard(); // 展示排行榜
@@ -133,6 +138,11 @@
                 leaderboardList.appendChild(li);
             });
             leaderboardDiv.style.display = "block"; // 显示排行榜
+        }
+
+        function gameOver() {
+            const gameOverSound = document.getElementById("gameOverSound");
+            gameOverSound.play(); // 播放游戏结束音效
         }
 
         window.addEventListener("keydown", (event) => {
