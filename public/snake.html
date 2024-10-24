@@ -16,13 +16,28 @@
         canvas {
             border: 1px solid black;
         }
+        #leaderboard {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: white;
+            border: 1px solid black;
+            padding: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div id="leaderboard">
+        <h3>玩家排名</h3>
+        <ol id="leaderboard-list"></ol>
+    </div>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const context = canvas.getContext("2d");
+        const leaderboardDiv = document.getElementById("leaderboard");
+        const leaderboardList = document.getElementById("leaderboard-list");
 
         const gridSize = 20;
         const tileCount = canvas.width / gridSize;
@@ -31,11 +46,14 @@
         let velocity = { x: 0, y: 0 };
         let food = { x: 5, y: 5 };
         let score = 0;
+        let highScores = []; // 用于存储玩家分数的数组
 
         function gameLoop() {
             updateSnake();
             if (checkCollision()) {
+                saveScore(); // 保存分数到排行榜
                 resetGame();
+                showLeaderboard(); // 展示排行榜
             } else {
                 if (checkFoodCollision()) {
                     growSnake();
@@ -100,6 +118,21 @@
 
             context.fillStyle = "black";
             context.fillText("Score: " + score, 10, canvas.height - 10);
+        }
+
+        function saveScore() {
+            highScores.push(score); // 将当前得分加入排名
+            highScores.sort((a, b) => b - a); // 按分数从高到低排序
+        }
+
+        function showLeaderboard() {
+            leaderboardList.innerHTML = ""; // 清空现有列表
+            highScores.forEach((score, index) => {
+                const li = document.createElement("li");
+                li.textContent = `玩家 ${index + 1}: ${score} 分`;
+                leaderboardList.appendChild(li);
+            });
+            leaderboardDiv.style.display = "block"; // 显示排行榜
         }
 
         window.addEventListener("keydown", (event) => {
