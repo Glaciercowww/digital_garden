@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇代码控制版</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+        #leaderboard {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: white;
+            border: 1px solid black;
+            padding: 10px;
+            display: none;
+        }
+        #codeEditor {
+            width: 400px;
+            height: 100px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <textarea id="codeEditor" placeholder="在这里写代码控制蛇的移动..."></textarea>
+    <button onclick="runCode()">运行代码</button>
+
+    <div id="leaderboard">
+        <h3>玩家排名</h3>
+        <ol id="leaderboard-list"></ol>
+    </div>
+    
+    <audio id="gameOverSound" src="niganma.mp3"></audio>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const context = canvas.getContext("2d");
+        const leaderboardDiv = document.getElementById("leaderboard");
+        const leaderboardList = document.getElementById("leaderboard-list");
+
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        let snake = [{ x: 10, y: 10 }];
+        let velocity = { x: 0, y: 0 };
+        let food = { x: 5, y: 5 };
+        let score = 0;
+        let highScores = [];
+
+        function gameLoop() {
+            updateSnake();
+            if (checkCollision()) {
+                gameOver();
+                saveScore();
+                resetGame();
+                showLeaderboard();
+            } else {
+                if (checkFoodCollision()) {
+                    growSnake();
+                    placeFood();
+                    score += 10;
+                }
+                drawGame();
+            }
+        }
+
+        function updateSnake() {
+            const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
+            snake.unshift(head);
+            snake.pop();
+        }
+
+        function checkCollision() {
+            const head = snake[0];
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+                return true;
+            }
+            for (let i = 1; i < snake.length; i++) {
+                if (snake[i].x === head.x && snake[i].y === head.y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function checkFoodCollision() {
+            return snake[0].x === food.x && snake[0].y === food.y;
+        }
+
+        function growSnake() {
+            const tail = { x: snake[snake.length - 1].x, y: snake[snake.length - 1].y };
+            snake.push(tail);
+        }
+
+        function placeFood() {
+            food.x = Math.floor(Math.random() * tileCount);
+            food.y = Math.floor(Math.random() * tileCount);
+        }
+
+        function resetGame() {
+            snake = [{ x: 10, y: 10 }];
+            velocity = { x: 0, y: 0 };
+            placeFood();
+            score = 0;
+        }
+
+        function drawGame() {
+            context.fillStyle = "white";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            context.fillStyle = "red";
+            context.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+
+            context.fillStyle = "green";
+            for (let i = 0; i < snake.length; i++) {
+                context.fillRect(snake[i].x * gridSize, snake[i].y * gridSize, gridSize - 2, gridSize - 2);
+            }
+
+            context.fillStyle = "black";
+            context.fillText("Score: " + score, 10, canvas.height - 10);
+        }
+
+        function saveScore() {
+            highScores.push(score);
+            highScores.sort((a, b) => b - a);
+        }
+
+        function showLeaderboard() {
+            leaderboardList.innerHTML = "";
+            highScores.forEach((score, index) => {
+                const li = document.createElement("li");
+                li.textContent = `玩家 ${index + 1}: ${score} 分`;
+                leaderboardList.appendChild(li);
+            });
+            leaderboardDiv.style.display = "block";
+        }
+
+        function gameOver() {
+            const gameOverSound = document.getElementById("gameOverSound");
+            gameOverSound.play();
+        }
+
+        // 运行玩家输入的代码
+        function runCode() {
+            const userCode = document.getElementById("codeEditor").value;
+            try {
+                eval(userCode); // 使用eval执行玩家输入的代码
+            } catch (error) {
+                alert("代码错误: " + error.message);
+            }
+        }
+
+        setInterval(gameLoop, 100);
+    </script>
+</body>
+</html>
