@@ -7,3 +7,4 @@
 <a href="/download">下载我的文件</a>
 
 <a href="/snake">贪吃蛇小游戏</a>
+<a href="/snakeplus2">编程打榜_自定义贪吃蛇游戏</a>
