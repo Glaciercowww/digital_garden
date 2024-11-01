@@ -8,3 +8,6 @@
 
 <a href="/snake">贪吃蛇小游戏</a>
 <a href="/snakeplus2">编程打榜_自定义贪吃蛇游戏</a>
+
+
+<img src="/content/assets/payment_qr.png" alt="收款码" style="width:200px;height:auto;">
