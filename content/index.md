@@ -29,5 +29,3 @@ layout: "default"
 <div style="margin-top: 30px; font-size: 18px; color: #666;">
     <p>感谢您的访问！如果您有任何问题或建议，欢迎随时联系我。</p>
 </div>
-
-
