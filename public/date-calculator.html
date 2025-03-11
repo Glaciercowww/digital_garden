@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日期计算工具</title>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --primary-dark: #3a5985;
+            --secondary-color: #ff6b6b;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --gray-color: #6c757d;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+            line-height: a1.6;
+            color: var(--dark-color);
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .current-time {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            font-weight: bold;
+        }
+        
+        .tab:hover {
+            color: var(--primary-color);
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .date-input {
+            position: relative;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--gray-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .result {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border-left: 4px solid var(--success-color);
+            display: none;
+        }
+        
+        .result.visible {
+            display: block;
+        }
+        
+        .calendar {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+        }
+        
+        .calendar-nav button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            padding: 0 10px;
+        }
+        
+        .calendar-title {
+            margin: 0 10px;
+            font-weight: bold;
+        }
+        
+        .calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .calendar-table th, .calendar-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        
+        .calendar-table th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .calendar-day {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .calendar-day:hover {
+            background-color: #e9ecef;
+        }
+        
+        .calendar-day.today {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .calendar-day.selected {
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .calendar-day.other-month {
+            color: #adb5bd;
+        }
+        
+        .flex-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .flex-item {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .icon {
+            margin-right: 5px;
+        }
+        
+        .special-days {
+            margin-top: 20px;
+        }
+        
+        .special-days-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .special-day-item {
+            background-color: var(--light-color);
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        .special-day-date {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .world-clock {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .clock-item {
+            background-color: var(--light-color);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .clock-city {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        /* 针对不同部分的样式 */
+        #date-difference .card {
+            border-top: 4px solid #4a6fa5;
+        }
+        
+        #future-date .card {
+            border-top: 4px solid #28a745;
+        }
+        
+        #business-days .card {
+            border-top: 4px solid #fd7e14;
+        }
+        
+        #special-dates .card {
+            border-top: 4px solid #6f42c1;
+        }
+        
+        #world-clock .card {
+            border-top: 4px solid #20c997;
+        }
+        
+        @media (max-width: 768px) {
+            .flex-container {
+                flex-direction: column;
+            }
+            
+            .calendar-table th, .calendar-table td {
+                padding: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>日期计算工具</h1>
+            <p>精确计算日期间隔、未来日期和更多时间功能</p>
+        </header>
+        
+        <div class="current-time" id="current-time">
+            当前时间：正在加载...
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="date-difference">日期间隔</div>
+            <div class="tab" data-tab="future-date">未来日期</div>
+            <div class="tab" data-tab="business-days">工作日计算</div>
+            <div class="tab" data-tab="special-dates">特殊日期</div>
+            <div class="tab" data-tab="world-clock">世界时钟</div>
+        </div>
+        
+        <div class="tab-content active" id="date-difference">
+            <div class="flex-container">
+                <div class="flex-item">
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="icon">📅</span> 计算两个日期之间的间隔
+                        </div>
+                        <div class="form-group">
+                            <label for="date-start">开始日期：</label>
+                            <input type="date" id="date-start" class="date-input">
+                            <button class="btn btn-secondary" id="set-today-start" style="margin-top: 10px;">设为今天</button>
+                        </div>
+                        <div class="form-group">
+                            <label for="date-end">结束日期：</label>
+                            <input type="date" id="date-end" class="date-input">
+                            <button class="btn btn-secondary" id="set-today-end" style="margin-top: 10px;">设为今天</button>
+                        </div>
+                        <button class="btn" id="calculate-difference">计算间隔</button>
+                        <div class="result" id="difference-result"></div>
+                    </div>
+                </div>
+                
+                <div class="flex-item">
+                    <div class="card">
+                        <div class="calendar" id="calendar-difference">
+                            <div class="calendar-header">
+                                <div class="calendar-nav">
+                                    <button id="prev-month">◀</button>
+                                    <div class="calendar-title" id="calendar-month-year">2025年3月</div>
+                                    <button id="next-month">▶</button>
+                                </div>
+                            </div>
+                            <table class="calendar-table">
+                                <thead>
+                                    <tr>
+                                        <th>日</th>
+                                        <th>一</th>
+                                        <th>二</th>
+                                        <th>三</th>
+                                        <th>四</th>
+                                        <th>五</th>
+                                        <th>六</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="calendar-body">
+                                    <!-- 日历内容将通过JavaScript生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="future-date">
+            <div class="flex-container">
+                <div class="flex-item">
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="icon">⏱️</span> 计算未来日期
+                        </div>
+                        <div class="form-group">
+                            <label for="start-date-future">开始日期：</label>
+                            <input type="date" id="start-date-future" class="date-input">
+                            <button class="btn btn-secondary" id="set-today-future" style="margin-top: 10px;">设为今天</button>
+                        </div>
+                        <div class="form-group">
+                            <label for="days-to-add">添加天数：</label>
+                            <input type="number" id="days-to-add" min="1" value="30">
+                        </div>
+                        <div class="form-group">
+                            <label>添加其他时间单位：</label>
+                            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                                <input type="number" id="years-to-add" min="0" value="0" placeholder="年" style="width: 30%;">
+                                <input type="number" id="months-to-add" min="0" value="0" placeholder="月" style="width: 30%;">
+                                <input type="number" id="weeks-to-add" min="0" value="0" placeholder="周" style="width: 30%;">
+                            </div>
+                        </div>
+                        <button class="btn" id="calculate-future-date">计算日期</button>
+                        <div class="result" id="future-date-result"></div>
+                    </div>
+                </div>
+                
+                <div class="flex-item">
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="icon">🔄</span> 快速计算常用日期
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <button class="btn" id="tomorrow">明天</button>
+                            <button class="btn" id="next-week">下周今天</button>
+                            <button class="btn" id="next-month">下个月今天</button>
+                            <button class="btn" id="next-year">明年今天</button>
+                            <button class="btn" id="after-100-days">100天后</button>
+                            <button class="btn" id="after-1000-days">1000天后</button>
+                        </div>
+                        <div class="result" id="quick-future-result"></div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 20px;">
+                        <div class="card-title">
+                            <span class="icon">⏮️</span> 计算过去日期
+                        </div>
+                        <div class="form-group">
+                            <label for="days-to-subtract">减去天数：</label>
+                            <input type="number" id="days-to-subtract" min="1" value="30">
+                        </div>
+                        <button class="btn" id="calculate-past-date">计算日期</button>
+                        <div class="result" id="past-date-result"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="business-days">
+            <div class="flex-container">
+                <div class="flex-item">
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="icon">💼</span> 工作日计算
+                        </div>
+                        <div class="form-group">
+                            <label for="business-start-date">开始日期：</label>
+                            <input type="date" id="business-start-date" class="date-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="business-end-date">结束日期：</label>
+                            <input type="date" id="business-end-date" class="date-input">
+                        </div>
+                        <div class="form-group">
+                            <label>排除周末：</label>
+                            <div style="display: flex; gap: 10px;">
+                                <label style="display: inline-flex; align-items: center;">
+                                    <input type="checkbox" id="exclude-saturday" checked>
+                                    <span style="margin-left: 5px;">周六</span>
+                                </label>
+                                <label style="display: inline-flex; align-items: center;">
+                                    <input type="checkbox" id="exclude-sunday" checked>
+                                    <span style="margin-left: 5px;">周日</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button class="btn" id="calculate-business-days">计算工作日</button>
+                        <div class="result" id="business-days-result"></div>
+                    </div>
+                </div>
+                
+                <div class="flex-item">
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="icon">📆</span> 添加工作日
+                        </div>
+                        <div class="form-group">
+                            <label for="add-business-start-date">开始日期：</label>
+                            <input type="date" id="add-business-start-date" class="date-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="business-days-to-add">添加工作日天数：</label>
+                            <input type="number" id="business-days-to-add" min="1" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label>排除周末：</label>
+                            <div style="display: flex; gap: 10px;">
+                                <label style="display: inline-flex; align-items: center;">
+                                    <input type="checkbox" id="add-exclude-saturday" checked>
+                                    <span style="margin-left: 5px;">周六</span>
+                                </label>
+                                <label style="display: inline-flex; align-items: center;">
+                                    <input type="checkbox" id="add-exclude-sunday" checked>
+                                    <span style="margin-left: 5px;">周日</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button class="btn" id="calculate-business-future">计算日期</button>
+                        <div class="result" id="business-future-result"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="special-dates">
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🎉</span> 节假日和特殊日期
+                </div>
+                <div class="form-group">
+                    <label for="holiday-year">选择年份：</label>
+                    <select id="holiday-year">
+                        <option value="2023">2023年</option>
+                        <option value="2024">2024年</option>
+                        <option value="2025" selected>2025年</option>
+                        <option value="2026">2026年</option>
+                    </select>
+                </div>
+                <button class="btn" id="show-holidays">显示节假日</button>
+                <div class="result" id="holidays-result">
+                    <div class="special-days-list" id="holidays-list">
+                        <!-- 节假日列表将通过JavaScript生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🎂</span> 生日和纪念日计算
+                </div>
+                <div class="form-group">
+                    <label for="anniversary-date">重要日期：</label>
+                    <input type="date" id="anniversary-date">
+                </div>
+                <div class="form-group">
+                    <label for="anniversary-name">名称：</label>
+                    <input type="text" id="anniversary-name" placeholder="例如：结婚纪念日、生日">
+                </div>
+                <button class="btn" id="add-anniversary">添加到列表</button>
+                <button class="btn btn-secondary" id="clear-anniversaries" style="margin-left: 10px;">清空列表</button>
+                
+                <div class="special-days" id="anniversaries-container">
+                    <h3>您的重要日期</h3>
+                    <div class="special-days-list" id="anniversaries-list">
+                        <!-- 纪念日列表将通过JavaScript生成和保存 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="world-clock">
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🌍</span> 世界时钟
+                </div>
+                <div class="world-clock" id="world-clock-container">
+                    <!-- 世界时钟将通过JavaScript生成 -->
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🕒</span> 时区转换
+                </div>
+                <div class="form-group">
+                    <label for="local-time">本地时间：</label>
+                    <input type="datetime-local" id="local-time">
+                </div>
+                <div class="form-group">
+                    <label for="target-timezone">目标时区：</label>
+                    <select id="target-timezone">
+                        <option value="UTC+0">UTC/GMT (UTC+0)</option>
+                        <option value="UTC-8">太平洋标准时间 (UTC-8)</option>
+                        <option value="UTC-5">东部标准时间 (UTC-5)</option>
+                        <option value="UTC+1">中欧时间 (UTC+1)</option>
+                        <option value="UTC+8" selected>中国标准时间 (UTC+8)</option>
+                        <option value="UTC+9">日本标准时间 (UTC+9)</option>
+                        <option value="UTC+10">澳大利亚东部标准时间 (UTC+10)</option>
+                    </select>
+                </div>
+                <button class="btn" id="convert-timezone">转换时区</button>
+                <div class="result" id="timezone-result"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 当前时间显示
+            function updateCurrentTime() {
+                const now = new Date();
+                const options = { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric', 
+                    weekday: 'long',
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit',
+                    hour12: false
+                };
+                document.getElementById('current-time').textContent = 
+                    '当前时间：' + now.toLocaleDateString('zh-CN', options);
+            }
+            
+            // 初始更新和设置定时器
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            
+            // 标签切换
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    tab.classList.add('active');
+                    document.getElementById(tab.dataset.tab).classList.add('active');
+                });
+            });
+            
+            // 初始化日期输入为今天
+            const today = new Date();
+            const todayISO = today.toISOString().split('T')[0];
+            
+            document.getElementById('date-start').value = todayISO;
+            document.getElementById('date-end').value = todayISO;
+            document.getElementById('start-date-future').value = todayISO;
+            document.getElementById('business-start-date').value = todayISO;
+            document.getElementById('business-end-date').value = todayISO;
+            document.getElementById('add-business-start-date').value = todayISO;
+            
+            // 设置为今天按钮
+            document.getElementById('set-today-start').addEventListener('click', () => {
+                document.getElementById('date-start').value = todayISO;
+            });
+            
+            document.getElementById('set-today-end').addEventListener('click', () => {
+                document.getElementById('date-end').value = todayISO;
+            });
+            
+            document.getElementById('set-today-future').addEventListener('click', () => {
+                document.getElementById('start-date-future').value = todayISO;
+            });
+            
+            // 计算日期差异
+            document.getElementById('calculate-difference').addEventListener('click', () => {
+                const startDate = new Date(document.getElementById('date-start').value);
+                const endDate = new Date(document.getElementById('date-end').value);
+                
+                // 验证日期
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                    document.getElementById('difference-result').innerHTML = '请输入有效的日期';
+                    document.getElementById('difference-result').className = 'result visible';
+                    return;
+                }
+                
+                // 计算差异（毫秒）
+                const diffTime = Math.abs(endDate - startDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                // 计算年、月、日
+                let years = 0;
+                let months = 0;
+                let days = 0;
+                
+                // 临时日期对象用于计算
+                let tempDate = new Date(startDate);
+                
+                // 计算年
+                while (tempDate <= endDate) {
+                    tempDate.setFullYear(tempDate.getFullYear() + 1);
+                    if (tempDate <= endDate) years++;
+                }
+                
+                // 重置并计算月
+                tempDate = new Date(startDate);
+                tempDate.setFullYear(tempDate.getFullYear() + years);
+                
+                while (tempDate <= endDate) {
+                    tempDate.setMonth(tempDate.getMonth() + 1);
+                    if (tempDate <= endDate) months++;
+                }
+                
+                // 重置并计算剩余天数
+                tempDate = new Date(startDate);
+                tempDate.setFullYear(tempDate.getFullYear() + years);
+                tempDate.setMonth(tempDate.getMonth() + months);
+                
+                while (tempDate < endDate) {
+                    tempDate.setDate(tempDate.getDate() + 1);
+                    days++;
+                }
+                
+                // 确定日期顺序和描述
+                let direction = '之后';
+                if (startDate > endDate) {
+                    direction = '之前';
+                }
+                
+                // 构建显示结果
+                let resultHTML = `<p><strong>总计: ${diffDays} 天</strong></p>`;
+                
+                resultHTML += `<p>详细计算:</p>`;
+                if (years > 0) {
+                    resultHTML += `<p>${years} 年`;
+                }
+                if (months > 0) {
+                    resultHTML += `${months} 个月`;
+                }
+                if (days > 0 || (years === 0 && months === 0)) {
+                    resultHTML += `${days} 天`;
+                }
+                resultHTML += `</p>`;
+                
+                // 显示两个日期描述
+                const startFormatted = startDate.toLocaleDateString('zh-CN');
+                const endFormatted = endDate.toLocaleDateString('zh-CN');
+                
+                if (startDate.getTime() === endDate.getTime()) {
+                    resultHTML += `<p>两个日期相同</p>`;
+                } else {
+                    resultHTML += `<p>结束日期 ${endFormatted} 是开始日期 ${startFormatted} ${direction}</p>`;
+                }
+                
+                document.getElementById('difference-result').innerHTML = resultHTML;
+                document.getElementById('difference-result').className = 'result visible';
+            });
+            
+            // 计算未来日期
+            document.getElementById('calculate-future-date').addEventListener('click', () => {
+                const startDate = new Date(document.getElementById('start-date-future').value);
+                const daysToAdd = parseInt(document.getElementById('days-to-add').value) || 0;
+                const yearsToAdd = parseInt(document.getElementById('years-to-add').value) || 0;
+                const monthsToAdd = parseInt(document.getElementById('months-to-add').value) || 0;
+                const weeksToAdd = parseInt(document.getElementById('weeks-to-add').value) || 0;
+                
+                // 验证日期
+                if (isNaN(startDate.getTime())) {
+                    document.getElementById('future-date-result').innerHTML = '请输入有效的开始日期';
+                    document.getElementById('future-date-result').className = 'result visible';
+                    return;
+                }
+                
+                // 创建新日期对象并添加时间
+                const futureDate = new Date(startDate);
+                futureDate.setFullYear(futureDate.getFullYear() + yearsToAdd);
+                futureDate.setMonth(futureDate.getMonth() + monthsToAdd);
+                futureDate.setDate(futureDate.getDate() + daysToAdd + (weeksToAdd * 7));
+                
+                // 计算总天数差异
+                const diffTime = Math.abs(futureDate - startDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                // 格式化日期
+                const startFormatted = startDate.toLocaleDateString('zh-CN');
+                const futureFormatted = futureDate.toLocaleDateString('zh-CN');
+                const futureWeekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][futureDate.getDay()];
+                
+                // 构建显示结果
+                let resultHTML = `<p>计算结果: <strong>${futureFormatted} ${futureWeekday}</strong></p>`;
+                
+                let addedDescription = [];
+                if (yearsToAdd > 0) addedDescription.push(`${yearsToAdd}年`);
+                if (monthsToAdd > 0) addedDescription.push(`${monthsToAdd}个月`);
+                if (weeksToAdd > 0) addedDescription.push(`${weeksToAdd}周`);
+                if (daysToAdd > 0) addedDescription.push(`${daysToAdd}天`);
+                
+                resultHTML += `<p>从 ${startFormatted} 开始，添加了 ${addedDescription.join('、')}，总共相差 ${diffDays} 天</p>`;
+                
+                document.getElementById('future-date-result').innerHTML = resultHTML;
+                document.getElementById('future-date-result').className = 'result visible';
+            });
+            
+            // 快速计算常用未来日期
+            function setupQuickFutureButton(buttonId, daysToAdd, monthsToAdd = 0, yearsToAdd = 0) {
+                document.getElementById(buttonId).addEventListener('click', () => {
+                    const now = new Date();
+                    const futureDate = new Date(now);
+                    
+                    futureDate.setFullYear(futureDate.getFullYear() + yearsToAdd);
+                    futureDate.setMonth(futureDate.getMonth() + monthsToAdd);
+                    futureDate.setDate(futureDate.getDate() + daysToAdd);
+                    
+                    const futureFormatted = futureDate.toLocaleDateString('zh-CN');
+                    const futureWeekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][futureDate.getDay()];
+                    
+                    let description;
+                    if (buttonId === 'tomorrow') description = '明天';
+                    else if (buttonId === 'next-week') description = '下周今天';
+                    else if (buttonId === 'next-month') description = '下个月今天';
+                    else if (buttonId === 'next-year') description = '明年今天';
+                    else if (buttonId === 'after-100-days') description = '100天后';
+                    else if (buttonId === 'after-1000-days') description = '1000天后';
+                    
+                    const resultHTML = `<p>${description}是: <strong>${futureFormatted} ${futureWeekday}</strong></p>`;
+                    
+                    document.getElementById('quick-future-result').innerHTML = resultHTML;
+                    document.getElementById('quick-future-result').className = 'result visible';
+                });
+            }
+            
+            setupQuickFutureButton('tomorrow', 1);
+            setupQuickFutureButton('next-week', 7);
+            setupQuickFutureButton('next-month', 0, 1);
+            setupQuickFutureButton('next-year', 0, 0, 1);
+            setupQuickFutureButton('after-100-days', 100);
+            setupQuickFutureButton('after-1000-days', 1000);
+            
+            // 计算过去日期
+            document.getElementById('calculate-past-date').addEventListener('click', () => {
+                const now = new Date();
+                const daysToSubtract = parseInt(document.getElementById('days-to-subtract').value) || 0;
+                
+                const pastDate = new Date(now);
+                pastDate.setDate(pastDate.getDate() - daysToSubtract);
+                
+                const pastFormatted = pastDate.toLocaleDateString('zh-CN');
+                const pastWeekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][pastDate.getDay()];
+                
+                const resultHTML = `<p>${daysToSubtract}天前是: <strong>${pastFormatted} ${pastWeekday}</strong></p>`;
+                
+                document.getElementById('past-date-result').innerHTML = resultHTML;
+                document.getElementById('past-date-result').className = 'result visible';
+            });
+            
+            // 计算工作日
+            document.getElementById('calculate-business-days').addEventListener('click', () => {
+                const startDate = new Date(document.getElementById('business-start-date').value);
+                const endDate = new Date(document.getElementById('business-end-date').value);
+                const excludeSaturday = document.getElementById('exclude-saturday').checked;
+                const excludeSunday = document.getElementById('exclude-sunday').checked;
+                
+                // 验证日期
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                    document.getElementById('business-days-result').innerHTML = '请输入有效的日期';
+                    document.getElementById('business-days-result').className = 'result visible';
+                    return;
+                }
+                
+                // 确保开始日期不晚于结束日期
+                let start = new Date(startDate);
+                let end = new Date(endDate);
+                let swapped = false;
+                
+                if (start > end) {
+                    [start, end] = [end, start];
+                    swapped = true;
+                }
+                
+                // 计算工作日
+                let businessDays = 0;
+                let current = new Date(start);
+                
+                while (current <= end) {
+                    const dayOfWeek = current.getDay(); // 0 = 周日, 6 = 周六
+                    
+                    if (
+                        (dayOfWeek !== 0 || !excludeSunday) && 
+                        (dayOfWeek !== 6 || !excludeSaturday)
+                    ) {
+                        businessDays++;
+                    }
+                    
+                    current.setDate(current.getDate() + 1);
+                }
+                
+                // 格式化日期
+                const startFormatted = start.toLocaleDateString('zh-CN');
+                const endFormatted = end.toLocaleDateString('zh-CN');
+                
+                // 构建显示结果
+                let resultHTML = `<p>工作日总数: <strong>${businessDays} 天</strong></p>`;
+                resultHTML += `<p>从 ${swapped ? endFormatted : startFormatted} 到 ${swapped ? startFormatted : endFormatted}</p>`;
+                
+                let excluded = [];
+                if (excludeSaturday) excluded.push('周六');
+                if (excludeSunday) excluded.push('周日');
+                
+                if (excluded.length > 0) {
+                    resultHTML += `<p>已排除: ${excluded.join('和')}</p>`;
+                }
+                
+                document.getElementById('business-days-result').innerHTML = resultHTML;
+                document.getElementById('business-days-result').className = 'result visible';
+            });
+            
+            // 添加工作日计算未来日期
+            document.getElementById('calculate-business-future').addEventListener('click', () => {
+                const startDate = new Date(document.getElementById('add-business-start-date').value);
+                const businessDaysToAdd = parseInt(document.getElementById('business-days-to-add').value) || 0;
+                const excludeSaturday = document.getElementById('add-exclude-saturday').checked;
+                const excludeSunday = document.getElementById('add-exclude-sunday').checked;
+                
+                // 验证日期
+                if (isNaN(startDate.getTime())) {
+                    document.getElementById('business-future-result').innerHTML = '请输入有效的开始日期';
+                    document.getElementById('business-future-result').className = 'result visible';
+                    return;
+                }
+                
+                // 计算未来工作日
+                let businessDaysAdded = 0;
+                let current = new Date(startDate);
+                
+                while (businessDaysAdded < businessDaysToAdd) {
+                    current.setDate(current.getDate() + 1);
+                    const dayOfWeek = current.getDay();
+                    
+                    if (
+                        (dayOfWeek !== 0 || !excludeSunday) && 
+                        (dayOfWeek !== 6 || !excludeSaturday)
+                    ) {
+                        businessDaysAdded++;
+                    }
+                }
+                
+                // 格式化日期
+                const startFormatted = startDate.toLocaleDateString('zh-CN');
+                const resultFormatted = current.toLocaleDateString('zh-CN');
+                const resultWeekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][current.getDay()];
+                
+                // 计算实际天数差异
+                const diffTime = Math.abs(current - startDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                // 构建显示结果
+                let resultHTML = `<p>添加 ${businessDaysToAdd} 个工作日后的日期: <strong>${resultFormatted} ${resultWeekday}</strong></p>`;
+                resultHTML += `<p>从 ${startFormatted} 开始，总共相差 ${diffDays} 天</p>`;
+                
+                let excluded = [];
+                if (excludeSaturday) excluded.push('周六');
+                if (excludeSunday) excluded.push('周日');
+                
+                if (excluded.length > 0) {
+                    resultHTML += `<p>已排除: ${excluded.join('和')}</p>`;
+                }
+                
+                document.getElementById('business-future-result').innerHTML = resultHTML;
+                document.getElementById('business-future-result').className = 'result visible';
+            });
+            
+            // 日历相关功能
+            let currentCalendarDate = new Date();
+            let selectedStartDate = null;
+            let selectedEndDate = null;
+            
+            function updateCalendar() {
+                const year = currentCalendarDate.getFullYear();
+                const month = currentCalendarDate.getMonth();
+                
+                // 更新日历标题
+                document.getElementById('calendar-month-year').textContent = 
+                    `${year}年${month + 1}月`;
+                
+                // 清空日历主体
+                const calendarBody = document.getElementById('calendar-body');
+                calendarBody.innerHTML = '';
+                
+                // 当月第一天和最后一天
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                
+                // 上个月最后几天（用于填充日历首行）
+                const prevMonthLastDay = new Date(year, month, 0).getDate();
+                const firstDayOfWeek = firstDay.getDay(); // 0 = 周日
+                
+                // 当天日期
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                // 生成日历
+                let date = 1;
+                let nextMonthDate = 1;
+                
+                // 创建6行（最大可能行数）
+                for (let i = 0; i < 6; i++) {
+                    // 如果已经超过了当月最后一天且已经显示了一周的下个月日期，则停止
+                    if (date > lastDay.getDate() && i > 0) break;
+                    
+                    const row = document.createElement('tr');
+                    
+                    // 创建7列（周日到周六）
+                    for (let j = 0; j < 7; j++) {
+                        const cell = document.createElement('td');
+                        cell.classList.add('calendar-day');
+                        
+                        // 填充上个月的日期
+                        if (i === 0 && j < firstDayOfWeek) {
+                            const prevDate = prevMonthLastDay - (firstDayOfWeek - j - 1);
+                            cell.textContent = prevDate;
+                            cell.classList.add('other-month');
+                        }
+                        // 填充当月的日期
+                        else if (date <= lastDay.getDate()) {
+                            cell.textContent = date;
+                            
+                            // 检查是否是今天
+                            const currentDate = new Date(year, month, date);
+                            if (currentDate.toDateString() === today.toDateString()) {
+                                cell.classList.add('today');
+                            }
+                            
+                            // 检查是否是选中的开始日期
+                            if (selectedStartDate && currentDate.toDateString() === selectedStartDate.toDateString()) {
+                                cell.classList.add('selected');
+                            }
+                            
+                            // 检查是否是选中的结束日期
+                            if (selectedEndDate && currentDate.toDateString() === selectedEndDate.toDateString()) {
+                                cell.classList.add('selected');
+                            }
+                            
+                            // 添加点击事件
+                            cell.addEventListener('click', () => {
+                                const clickedDate = new Date(year, month, parseInt(cell.textContent));
+                                selectDate(clickedDate);
+                            });
+                            
+                            date++;
+                        }
+                        // 填充下个月的日期
+                        else {
+                            cell.textContent = nextMonthDate;
+                            cell.classList.add('other-month');
+                            nextMonthDate++;
+                        }
+                        
+                        row.appendChild(cell);
+                    }
+                    
+                    calendarBody.appendChild(row);
+                }
+            }
+            
+            // 上个月和下个月按钮
+            document.getElementById('prev-month').addEventListener('click', () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                updateCalendar();
+            });
+            
+            document.getElementById('next-month').addEventListener('click', () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                updateCalendar();
+            });
+            
+            // 选择日期
+            function selectDate(date) {
+                // 如果没有选择开始日期，或者已经选择了结束日期，则重新开始选择
+                if (!selectedStartDate || selectedEndDate) {
+                    selectedStartDate = date;
+                    selectedEndDate = null;
+                    document.getElementById('date-start').value = formatDateForInput(date);
+                }
+                // 如果已选择开始日期，则选择结束日期
+                else {
+                    // 确保开始日期不晚于结束日期
+                    if (date < selectedStartDate) {
+                        selectedEndDate = selectedStartDate;
+                        selectedStartDate = date;
+                        document.getElementById('date-start').value = formatDateForInput(date);
+                        document.getElementById('date-end').value = formatDateForInput(selectedEndDate);
+                    } else {
+                        selectedEndDate = date;
+                        document.getElementById('date-end').value = formatDateForInput(date);
+                    }
+                    
+                    // 自动计算日期差异
+                    document.getElementById('calculate-difference').click();
+                }
+                
+                updateCalendar();
+            }
+            
+            // 格式化日期为input元素所需的格式
+            function formatDateForInput(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            
+            // 初始化日历
+            updateCalendar();
+            
+            // 中国节假日数据
+            const chineseHolidays = {
+                '2023': [
+                    { name: '元旦', date: '2023-01-01' },
+                    { name: '春节', date: '2023-01-22' },
+                    { name: '清明节', date: '2023-04-05' },
+                    { name: '劳动节', date: '2023-05-01' },
+                    { name: '端午节', date: '2023-06-22' },
+                    { name: '中秋节', date: '2023-09-29' },
+                    { name: '国庆节', date: '2023-10-01' }
+                ],
+                '2024': [
+                    { name: '元旦', date: '2024-01-01' },
+                    { name: '春节', date: '2024-02-10' },
+                    { name: '清明节', date: '2024-04-04' },
+                    { name: '劳动节', date: '2024-05-01' },
+                    { name: '端午节', date: '2024-06-10' },
+                    { name: '中秋节', date: '2024-09-17' },
+                    { name: '国庆节', date: '2024-10-01' }
+                ],
+                '2025': [
+                    { name: '元旦', date: '2025-01-01' },
+                    { name: '春节', date: '2025-01-29' },
+                    { name: '清明节', date: '2025-04-04' },
+                    { name: '劳动节', date: '2025-05-01' },
+                    { name: '端午节', date: '2025-05-31' },
+                    { name: '中秋节', date: '2025-10-06' },
+                    { name: '国庆节', date: '2025-10-01' }
+                ],
+                '2026': [
+                    { name: '元旦', date: '2026-01-01' },
+                    { name: '春节', date: '2026-02-17' },
+                    { name: '清明节', date: '2026-04-04' },
+                    { name: '劳动节', date: '2026-05-01' },
+                    { name: '端午节', date: '2026-06-19' },
+                    { name: '中秋节', date: '2026-09-25' },
+                    { name: '国庆节', date: '2026-10-01' }
+                ]
+            };
+            
+            // 显示节假日
+            document.getElementById('show-holidays').addEventListener('click', () => {
+                const year = document.getElementById('holiday-year').value;
+                const holidays = chineseHolidays[year] || [];
+                
+                if (holidays.length === 0) {
+                    document.getElementById('holidays-list').innerHTML = '<p>没有找到该年份的节假日数据</p>';
+                    document.getElementById('holidays-result').className = 'result visible';
+                    return;
+                }
+                
+                let html = '';
+                
+                for (const holiday of holidays) {
+                    const date = new Date(holiday.date);
+                    const formattedDate = date.toLocaleDateString('zh-CN');
+                    
+                    html += `
+                        <div class="special-day-item">
+                            <div class="special-day-date">${holiday.name}</div>
+                            <div>${formattedDate}</div>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('holidays-list').innerHTML = html;
+                document.getElementById('holidays-result').className = 'result visible';
+            });
+            
+            // 纪念日管理
+            let anniversaries = JSON.parse(localStorage.getItem('anniversaries') || '[]');
+            
+            function updateAnniversaries() {
+                const container = document.getElementById('anniversaries-list');
+                
+                if (anniversaries.length === 0) {
+                    container.innerHTML = '<p>您尚未添加任何重要日期</p>';
+                    return;
+                }
+                
+                let html = '';
+                const today = new Date();
+                
+                for (const anniv of anniversaries) {
+                    const date = new Date(anniv.date);
+                    const formattedDate = date.toLocaleDateString('zh-CN');
+                    
+                    // 计算天数差异
+                    const daysDiff = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+                    
+                    // 计算今年的纪念日
+                    const thisYear = today.getFullYear();
+                    const thisYearAnniv = new Date(date);
+                    thisYearAnniv.setFullYear(thisYear);
+                    
+                    // 如果今年的纪念日已经过去，计算下一年的
+                    if (thisYearAnniv < today) {
+                        thisYearAnniv.setFullYear(thisYear + 1);
+                    }
+                    
+                    // 计算距离下一次纪念日的天数
+                    const daysUntilNext = Math.ceil((thisYearAnniv - today) / (1000 * 60 * 60 * 24));
+                    
+                    html += `
+                        <div class="special-day-item">
+                            <div class="special-day-date">${anniv.name}</div>
+                            <div>${formattedDate}</div>
+                            <div>已经 ${daysDiff} 天</div>
+                            <div>距离下次还有 ${daysUntilNext} 天</div>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = html;
+            }
+            
+            // 添加纪念日
+            document.getElementById('add-anniversary').addEventListener('click', () => {
+                const date = document.getElementById('anniversary-date').value;
+                const name = document.getElementById('anniversary-name').value.trim();
+                
+                if (!date || !name) {
+                    alert('请输入日期和名称');
+                    return;
+                }
+                
+                anniversaries.push({ date, name });
+                localStorage.setItem('anniversaries', JSON.stringify(anniversaries));
+                
+                // 清空输入框
+                document.getElementById('anniversary-date').value = '';
+                document.getElementById('anniversary-name').value = '';
+                
+                updateAnniversaries();
+            });
+            
+            // 清空纪念日
+            document.getElementById('clear-anniversaries').addEventListener('click', () => {
+                if (confirm('确定要清空所有纪念日吗？')) {
+                    anniversaries = [];
+                    localStorage.setItem('anniversaries', JSON.stringify(anniversaries));
+                    updateAnniversaries();
+                }
+            });
+            
+            // 世界时钟
+            const cities = [
+                { name: '北京', timezone: 'Asia/Shanghai' },
+                { name: '纽约', timezone: 'America/New_York' },
+                { name: '伦敦', timezone: 'Europe/London' },
+                { name: '东京', timezone: 'Asia/Tokyo' },
+                { name: '悉尼', timezone: 'Australia/Sydney' },
+                { name: '巴黎', timezone: 'Europe/Paris' }
+            ];
+            
+            function updateWorldClock() {
+                const container = document.getElementById('world-clock-container');
+                let html = '';
+                
+                for (const city of cities) {
+                    const options = {
+                        timeZone: city.timezone,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    };
+                    
+                    const time = new Date().toLocaleTimeString('zh-CN', options);
+                    
+                    html += `
+                        <div class="clock-item">
+                            <div class="clock-city">${city.name}</div>
+                            <div class="clock-time">${time}</div>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = html;
+            }
+            
+            // 初始化世界时钟并设置定时更新
+            updateWorldClock();
+            setInterval(updateWorldClock, 1000);
+            
+            // 时区转换
+            document.getElementById('convert-timezone').addEventListener('click', () => {
+                const localTimeStr = document.getElementById('local-time').value;
+                const targetTimezone = document.getElementById('target-timezone').value;
+                
+                if (!localTimeStr) {
+                    document.getElementById('timezone-result').innerHTML = '请选择本地时间';
+                    document.getElementById('timezone-result').className = 'result visible';
+                    return;
+                }
+                
+                // 解析时区偏移量
+                const match = targetTimezone.match(/UTC([+-])(\d+)/);
+                if (!match) {
+                    document.getElementById('timezone-result').innerHTML = '无效的时区';
+                    document.getElementById('timezone-result').className = 'result visible';
+                    return;
+                }
+                
+                const sign = match[1] === '+' ? 1 : -1;
+                const hours = parseInt(match[2]);
+                
+                // 解析本地时间
+                const localTime = new Date(localTimeStr);
+                
+                // 计算UTC时间
+                const utcTime = new Date(localTime.getTime() - (localTime.getTimezoneOffset() * 60000));
+                
+                // 计算目标时区时间
+                const targetTime = new Date(utcTime.getTime() + (hours * sign * 3600000));
+                
+                // 格式化结果
+                const localFormatted = localTime.toLocaleString('zh-CN');
+                const targetFormatted = targetTime.toLocaleString('zh-CN');
+                
+                let resultHTML = `<p>本地时间: ${localFormatted}</p>`;
+                resultHTML += `<p>${document.getElementById('target-timezone').options[document.getElementById('target-timezone').selectedIndex].text}: ${targetFormatted}</p>`;
+                
+                document.getElementById('timezone-result').innerHTML = resultHTML;
+                document.getElementById('timezone-result').className = 'result visible';
+            });
+            
+            // 设置当前本地时间
+            const now = new Date();
+            const localTime = now.toISOString().slice(0, 16);
+            document.getElementById('local-time').value = localTime;
+            
+            // 初始化纪念日列表
+            updateAnniversaries();
+        });
+    </script>
+</body>
+</html>
