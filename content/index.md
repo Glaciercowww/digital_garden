@@ -4,9 +4,9 @@
 
 ## 📚 学习资源
 
-- [数字图像处理笔记](https://www.glacierchen.asia/数字图像处理复习) - 关于数字图像处理的详细学习笔记
+- [数字图像处理笔记](https://www.glacierchen.asia/数字图像处理复习) 
 - [ChatGPT论文修改润色Prompt](https://www.glacierchen.asia/Z：Prompts/论文润色Prompt) - 帮助你提升论文质量的AI提示词
-
+- [模式识别](https://www.yuque.com/glacier-hg5di/mnw2m9) 
 ## 🔧 实用工具
 
 - [日期计算工具大全](/date-calculator) - 各种实用的日期计算功能
