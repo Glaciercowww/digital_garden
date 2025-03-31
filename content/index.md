@@ -6,7 +6,7 @@
 
 - [数字图像处理笔记](https://www.glacierchen.asia/数字图像处理复习) 
 - [模式识别](https://www.yuque.com/glacier-hg5di/mnw2m9)
-- [深度学习の大杂烩](https://www.yuque.com/glacier-hg5di/deep_learning) -包含关于python基础，coding能力，DeepLearning通用知识or尝试(狠狠学习与整理中ing...)
+- [深度学习の大杂烩](https://www.yuque.com/glacier-hg5di/deep_learning) -包含关于python基础，coding能力，DeepLearning通用知识or常识(狠狠学习与整理中ing...)
 
 ## 🔧 实用工具
 
