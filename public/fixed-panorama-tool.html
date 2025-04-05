@@ -498,390 +498,286 @@
             });
         }
         
-     // 处理全景拼接
-function processPanoramaStitching(imageElements, ratio, reprojThresh, detectorType, showDebug) {
-    try {
-        // 显示进度状态
-        processingStatus.textContent = '正在加载图像...';
-        
-        // 将HTML图像元素转换为OpenCV矩阵
-        const cvImages = [];
-        for (let i = 0; i < imageElements.length; i++) {
-            processingStatus.textContent = `处理图像 ${i+1}/${imageElements.length}...`;
-            const img = imageElements[i];
-            const mat = cv.imread(img);
-            cvImages.push(mat);
-        }
-        
-        // 开始拼接过程
-        processingStatus.textContent = '开始拼接图像...';
-        const result = stitchImages(cvImages, ratio, reprojThresh, detectorType, showDebug);
-        
-        // 显示结果
-        processingStatus.textContent = '拼接完成！';
-        cv.imshow('resultImage', result);
-        resultSection.style.display = 'block';
-        downloadBtn.style.display = 'inline-block';
-        
-        // 释放内存
-        cvImages.forEach(mat => mat.delete());
-        result.delete();
-        
-        // 完成后关闭加载指示器
-        loadingIndicator.style.display = 'none';
-        stitchBtn.disabled = false;
-        
-    } catch (error) {
-        console.error('拼接过程出错:', error);
-        processingStatus.textContent = '拼接失败: ' + error.message;
-        loadingIndicator.style.display = 'none';
-        stitchBtn.disabled = false;
-    }
-}
-
-// 实现基于全景2.py的图像拼接算法
-function stitchImages(images, ratio, reprojThresh, detectorType, showDebug) {
-    if (images.length < 2) {
-        throw new Error('至少需要两张图像进行拼接');
-    }
-    
-    // 以第一张图像为基准，依次拼接
-    let result = images[0].clone();
-    let vis_list = [];
-    
-    // 逐一拼接每张图像
-    for (let i = 1; i < images.length; i++) {
-        processingStatus.textContent = `拼接图像 ${i} 和已拼接结果...`;
-        
-        // 检测特征点并描述
-        const featuresResult = detectAndDescribe(result, detectorType);
-        const featuresNext = detectAndDescribe(images[i], detectorType);
-        
-        // 匹配特征点
-        const M = matchKeypoints(
-            featuresNext.keypoints, 
-            featuresResult.keypoints,
-            featuresNext.descriptors, 
-            featuresResult.descriptors,
-            ratio, 
-            reprojThresh
-        );
-        
-        // 如果匹配失败，跳过这张图像
-        if (!M) {
-            console.warn(`图像 ${i} 与已拼接结果匹配失败，跳过...`);
-            continue;
-        }
-        
-        // 应用透视变换拼接图像
-        const [matches, H, status] = M;
-        
-        // 计算变换后的图像大小和偏移
-        const h_result = result.rows;
-        const w_result = result.cols;
-        const h_next = images[i].rows;
-        const w_next = images[i].cols;
-        
-        // 创建变换后的图像边界点
-        const pts1 = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 0, h_result, w_result, h_result, w_result, 0]);
-        const pts2 = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 0, h_next, w_next, h_next, w_next, 0]);
-        
-        // 应用变换矩阵到图像边界点
-        const pts2_ = new cv.Mat();
-        cv.perspectiveTransform(pts2, pts2_, H);
-        
-        // 合并两组点
-        const pts = new cv.Mat();
-        cv.vconcat([pts1, pts2_], pts);
-        
-        // 计算变换后的图像边界
-        let minPoint = new cv.Point(Number.MAX_VALUE, Number.MAX_VALUE);
-        let maxPoint = new cv.Point(Number.MIN_VALUE, Number.MIN_VALUE);
-        
-        // 找出所有点的最小和最大x,y值
-        for (let j = 0; j < pts.rows; j++) {
-            const x = pts.data32F[j * 2];
-            const y = pts.data32F[j * 2 + 1];
-            minPoint.x = Math.min(minPoint.x, x);
-            minPoint.y = Math.min(minPoint.y, y);
-            maxPoint.x = Math.max(maxPoint.x, x);
-            maxPoint.y = Math.max(maxPoint.y, y);
-        }
-        
-        // 平移矩阵
-        const t = [Math.ceil(-minPoint.x), Math.ceil(-minPoint.y)];
-        const Ht = cv.matFromArray(3, 3, cv.CV_64F, [
-            1, 0, t[0],
-            0, 1, t[1],
-            0, 0, 1
-        ]);
-        
-        // 创建单位矩阵
-        const I = cv.Mat.eye(3, 3, cv.CV_64F);
-        
-        // 应用变换
-        const HtI = new cv.Mat();
-        cv.matMul(Ht, I, HtI);
-        
-        const HtH = new cv.Mat();
-        cv.matMul(Ht, H, HtH);
-        
-        // 计算新图像尺寸
-        const width = Math.ceil(maxPoint.x - minPoint.x);
-        const height = Math.ceil(maxPoint.y - minPoint.y);
-        
-        // 应用变换，创建全景图
-        const result_warped = new cv.Mat();
-        const next_warped = new cv.Mat();
-        
-        cv.warpPerspective(result, result_warped, HtI, new cv.Size(width, height));
-        cv.warpPerspective(images[i], next_warped, HtH, new cv.Size(width, height));
-        
-        // 创建掩码，用于融合图像
-        const mask = new cv.Mat.zeros(height, width, cv.CV_8U);
-        const ones = new cv.Mat(h_next, w_next, cv.CV_8U, new cv.Scalar(1));
-        const mask_warped = new cv.Mat();
-        cv.warpPerspective(ones, mask_warped, HtH, new cv.Size(width, height));
-        
-        // 融合图像
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                if (mask_warped.ucharPtr(y, x)[0] > 0) {
-                    // 将next_warped的像素复制到result_warped
-                    const resultPtr = result_warped.ucharPtr(y, x);
-                    const nextPtr = next_warped.ucharPtr(y, x);
+        // 处理全景拼接
+        function processPanoramaStitching(imageElements, ratio, reprojThresh, detectorType, showDebug) {
+            try {
+                // 使用requestAnimationFrame确保UI能更新
+                requestAnimationFrame(() => {
+                processingStatus.textContent = '正在处理图像...';
+                
+                // 将图像转换为OpenCV格式
+                const cvImages = [];
+                for (let i = 0; i < imageElements.length; i++) {
+                    processingStatus.textContent = `处理图像 ${i+1}/${imageElements.length}...`;
                     
-                    resultPtr[0] = nextPtr[0]; // B
-                    resultPtr[1] = nextPtr[1]; // G
-                    resultPtr[2] = nextPtr[2]; // R
+                    // 创建一个临时canvas
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = imageElements[i].width;
+                    canvas.height = imageElements[i].height;
+                    ctx.drawImage(imageElements[i], 0, 0);
+                    
+                    // 从canvas获取图像数据
+                    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // 转换为OpenCV的Mat格式
+                    const src = cv.matFromImageData(imgData);
+                    
+                    // 转换为灰度图（用于特征检测）
+                    const gray = new cv.Mat();
+                    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+                    
+                    cvImages.push({
+                        original: src,
+                        gray: gray
+                    });
                 }
-            }
-        }
-        
-        // 释放之前的结果，更新为新结果
-        result.delete();
-        result = result_warped.clone();
-        
-        // 如果需要显示匹配结果并且开启了调试
-        if (showDebug) {
-            const vis = drawMatches(images[i], result, 
-                                  featuresNext.keypoints, featuresResult.keypoints, 
-                                  matches, status);
-            // 添加到可视化列表并显示
-            if (vis) {
-                const canvasId = `matchCanvas${i}`;
-                const canvas = document.createElement('canvas');
-                canvas.id = canvasId;
-                canvas.className = 'debug-canvas';
                 
-                const title = document.createElement('h4');
-                title.textContent = `图像 ${i} 和已拼接结果的匹配`;
+                processingStatus.textContent = '提取图像特征...';
                 
-                matchesContainer.appendChild(title);
-                matchesContainer.appendChild(canvas);
+                // 特征检测和匹配
+                const features = [];
+                for (let i = 0; i < cvImages.length; i++) {
+                    const keypoints = new cv.KeyPointVector();
+                    const descriptors = new cv.Mat();
+                    
+                    // 使用选择的特征检测器
+                    if (detectorType === 'sift') {
+                        // SIFT检测器（更准确但较慢）
+                        const sift = new cv.SIFT();
+                        sift.detect(cvImages[i].gray, keypoints);
+                        sift.compute(cvImages[i].gray, keypoints, descriptors);
+                        sift.delete();
+                    } else {
+                        // ORB检测器（更快但可能不那么准确）
+                        const orb = new cv.ORB();
+                        orb.detect(cvImages[i].gray, keypoints);
+                        orb.compute(cvImages[i].gray, keypoints, descriptors);
+                        orb.delete();
+                    }
+                    
+                    features.push({
+                        keypoints: keypoints,
+                        descriptors: descriptors
+                    });
+                    
+                    // 绘制特征点（如果启用调试）
+                    if (showDebug) {
+                        const keypointsImage = new cv.Mat();
+                        cv.drawKeypoints(cvImages[i].original, keypoints, keypointsImage);
+                        
+                        const featureCanvas = document.createElement('canvas');
+                        featureCanvas.width = keypointsImage.cols;
+                        featureCanvas.height = keypointsImage.rows;
+                        featureCanvas.className = 'debug-canvas';
+                        cv.imshow(featureCanvas, keypointsImage);
+                        
+                        const featureContainer = document.createElement('div');
+                        featureContainer.innerHTML = `<p>图像 ${i+1} 特征点: ${keypoints.size()} 个点</p>`;
+                        featureContainer.appendChild(featureCanvas);
+                        featuresContainer.appendChild(featureContainer);
+                        
+                        keypointsImage.delete();
+                    }
+                }
                 
-                cv.imshow(canvasId, vis);
-                vis.delete();
-            }
-        }
-        
-        // 释放内存
-        pts1.delete();
-        pts2.delete();
-        pts2_.delete();
-        pts.delete();
-        HtI.delete();
-        HtH.delete();
-        Ht.delete();
-        I.delete();
-        next_warped.delete();
-        mask.delete();
-        ones.delete();
-        mask_warped.delete();
-        
-        if (featuresResult.keypoints) featuresResult.keypoints.delete();
-        if (featuresResult.descriptors) featuresResult.descriptors.delete();
-        if (featuresNext.keypoints) featuresNext.keypoints.delete();
-        if (featuresNext.descriptors) featuresNext.descriptors.delete();
-    }
-    
-    return result;
-}
-
-// 特征检测和描述函数（对应Python中的detectAndDescribe方法）
-function detectAndDescribe(image, detectorType) {
-    // 转换图像为灰度
-    const gray = new cv.Mat();
-    cv.cvtColor(image, gray, cv.COLOR_BGR2GRAY);
-    
-    let keypoints = new cv.KeyPointVector();
-    let descriptors = new cv.Mat();
-    
-    // 根据选择使用不同的特征检测器
-    if (detectorType === 'sift') {
-        // 使用SIFT
-        const sift = new cv.SIFT();
-        sift.detect(gray, keypoints);
-        sift.compute(gray, keypoints, descriptors);
-    } else {
-        // 使用ORB (默认)
-        const orb = new cv.ORB(500);
-        orb.detectAndCompute(gray, new cv.Mat(), keypoints, descriptors);
-    }
-    
-    // 释放内存
-    gray.delete();
-    
-    return {
-        keypoints: keypoints,
-        descriptors: descriptors
-    };
-}
-
-// 特征点匹配函数（对应Python中的matchKeypoints方法）
-function matchKeypoints(kpsA, kpsB, featuresA, featuresB, ratio, reprojThresh) {
-    // 创建特征匹配器
-    const matcher = new cv.BFMatcher(cv.NORM_L2);
-    const matches = new cv.DMatchVector();
-    
-    // 进行knn匹配
-    const knnMatches = new cv.DMatchVectorVector();
-    matcher.knnMatch(featuresA, featuresB, knnMatches, 2);
-    
-    // 应用Lowe的比率测试
-    const goodMatches = [];
-    const status = [];
-    
-    for (let i = 0; i < knnMatches.size(); i++) {
-        if (knnMatches.get(i).size() >= 2) {
-            const m = knnMatches.get(i).get(0);
-            const n = knnMatches.get(i).get(1);
-            
-            if (m.distance < n.distance * ratio) {
-                goodMatches.push(m);
-                matches.push_back(m);
-                status.push(1);
-            } else {
-                status.push(0);
-            }
-        }
-    }
-    
-    // 需要至少4个匹配点才能计算单应性矩阵
-    if (goodMatches.length >= 4) {
-        // 构建两组点
-        const srcPoints = [];
-        const dstPoints = [];
-        
-        for (let i = 0; i < goodMatches.length; i++) {
-            const trainIdx = goodMatches[i].trainIdx;
-            const queryIdx = goodMatches[i].queryIdx;
-            
-            // 获取对应的关键点
-            const ptA = new cv.Point(
-                kpsA.get(queryIdx).pt.x, 
-                kpsA.get(queryIdx).pt.y
-            );
-            const ptB = new cv.Point(
-                kpsB.get(trainIdx).pt.x, 
-                kpsB.get(trainIdx).pt.y
-            );
-            
-            srcPoints.push(ptA.x, ptA.y);
-            dstPoints.push(ptB.x, ptB.y);
-        }
-        
-        // 转换为OpenCV矩阵
-        const srcPointsMat = cv.matFromArray(goodMatches.length, 1, cv.CV_32FC2, srcPoints);
-        const dstPointsMat = cv.matFromArray(goodMatches.length, 1, cv.CV_32FC2, dstPoints);
-        
-        // 计算单应性矩阵
-        const mask = new cv.Mat();
-        const H = cv.findHomography(srcPointsMat, dstPointsMat, cv.RANSAC, reprojThresh, mask);
-        
-        // 释放内存
-        srcPointsMat.delete();
-        dstPointsMat.delete();
-        
-        // 返回匹配结果
-        return [matches, H, status];
-    }
-    
-    // 释放内存
-    knnMatches.delete();
-    
-    // 匹配失败
-    return null;
-}
-
-// 绘制特征点匹配结果（对应Python中的drawMatches方法）
-function drawMatches(imageA, imageB, kpsA, kpsB, matches, status) {
-    try {
-        // 获取图像尺寸
-        const hA = imageA.rows;
-        const wA = imageA.cols;
-        const hB = imageB.rows;
-        const wB = imageB.cols;
-        
-        // 创建可视化图像
-        const vis = new cv.Mat.zeros(Math.max(hA, hB), wA + wB, cv.CV_8UC3);
-        
-        // 将两张图像放在可视化图像的左右两侧
-        const leftRect = new cv.Rect(0, 0, wA, hA);
-        const rightRect = new cv.Rect(wA, 0, wB, hB);
-        
-        imageA.copyTo(vis.roi(leftRect));
-        imageB.copyTo(vis.roi(rightRect));
-        
-        // 绘制匹配线
-        for (let i = 0; i < matches.size(); i++) {
-            if (status[i] === 1) {
-                // 获取匹配的关键点
-                const m = matches.get(i);
-                const queryIdx = m.queryIdx;
-                const trainIdx = m.trainIdx;
+                processingStatus.textContent = '匹配特征点...';
                 
-                // 绘制匹配线
-                const ptA = new cv.Point(
-                    kpsA.get(queryIdx).pt.x, 
-                    kpsA.get(queryIdx).pt.y
-                );
-                const ptB = new cv.Point(
-                    kpsB.get(trainIdx).pt.x + wA, 
-                    kpsB.get(trainIdx).pt.y
-                );
+                // 初始化结果图像为第一张图像
+                let resultMat = cvImages[0].original.clone();
                 
-                // 绘制线条
-                cv.line(vis, ptA, ptB, [0, 255, 0, 255], 1);
-            }
-        }
-        
-        return vis;
-    } catch (error) {
-        console.error('绘制匹配出错:', error);
-        return null;
-    }
-}
-
-// 下载拼接结果
-function downloadResult() {
-    if (!resultImage.src) return;
-    
-    const link = document.createElement('a');
-    link.download = 'panorama_result.jpg';  // 修改为.jpg格式
-    link.href = resultImage.src;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-        // 检测OpenCV.js是否已加载
-        if (typeof cv !== 'undefined') {
-            // 如果页面加载时已经加载了OpenCV，直接调用加载完成函数
-            onOpenCVLoaded();
-        } else {
-            // 否则等待script标签中的onload回调触发
-            opencvStatus.textContent = '正在加载OpenCV.js，请稍候...';
-        }
-    </script>
-</body>
-</html>
+                // 依次拼接每一对相邻图像
+                for (let i = 0; i < cvImages.length - 1; i++) {
+                    processingStatus.textContent = `拼接图像 ${i+1} 和 ${i+2}...`;
+                    
+                    // 进行特征匹配
+                    const matcher = new cv.BFMatcher();
+                    const matches = new cv.DMatchVector();
+                    
+                    if (detectorType === 'sift') {
+                        // SIFT使用L2距离
+                        matcher.match(features[i].descriptors, features[i+1].descriptors, matches);
+                    } else {
+                        // ORB使用汉明距离
+                        matcher.match(features[i].descriptors, features[i+1].descriptors, matches, new cv.Mat());
+                    }
+                    
+                    // 筛选好的匹配点
+                    const goodMatches = new cv.DMatchVector();
+                    const matchesArray = [];
+                    
+                    // 获取所有匹配的距离
+                    for (let j = 0; j < matches.size(); j++) {
+                        matchesArray.push({ 
+                            idx: j, 
+                            distance: matches.get(j).distance 
+                        });
+                    }
+                    
+                    // 按距离排序
+                    matchesArray.sort((a, b) => a.distance - b.distance);
+                    
+                    // 使用Lowe's比率测试筛选匹配点
+                    const minDist = matchesArray[0].distance;
+                    const distThreshold = Math.max(minDist * 2, ratio * matchesArray[matches.size() - 1].distance);
+                    
+                    for (let j = 0; j < matches.size(); j++) {
+                        if (matches.get(j).distance <= distThreshold) {
+                            goodMatches.push_back(matches.get(j));
+                        }
+                    }
+                    
+                    processingStatus.textContent = `找到 ${goodMatches.size()} 个有效匹配点`;
+                    
+                    if (goodMatches.size() < 4) {
+                        throw new Error(`图像 ${i+1} 和 ${i+2} 之间找不到足够的匹配点`);
+                    }
+                    
+                    // 绘制匹配（如果启用调试）
+                    if (showDebug) {
+                        const matchesImage = new cv.Mat();
+                        const emptyMask = new cv.Mat();
+                        cv.drawMatches(
+                            cvImages[i].original, features[i].keypoints,
+                            cvImages[i+1].original, features[i+1].keypoints,
+                            goodMatches, matchesImage, new cv.Scalar(0, 255, 0), 
+                            new cv.Scalar(255, 0, 0), emptyMask
+                        );
+                        
+                        const matchCanvas = document.createElement('canvas');
+                        matchCanvas.width = matchesImage.cols;
+                        matchCanvas.height = matchesImage.rows;
+                        matchCanvas.className = 'debug-canvas';
+                        cv.imshow(matchCanvas, matchesImage);
+                        
+                        const matchContainer = document.createElement('div');
+                        matchContainer.innerHTML = `<p>图像 ${i+1} 和 ${i+2} 之间的匹配: ${goodMatches.size()} 个有效匹配</p>`;
+                        matchContainer.appendChild(matchCanvas);
+                        matchesContainer.appendChild(matchContainer);
+                        
+                        matchesImage.delete();
+                        emptyMask.delete();
+                    }
+                    
+                    // 准备用于findHomography的点
+                    const srcPoints = [];
+                    const dstPoints = [];
+                    
+                    // 获取匹配点的坐标
+                    for (let j = 0; j < goodMatches.size(); j++) {
+                        const match = goodMatches.get(j);
+                        const kp1 = features[i].keypoints.get(match.queryIdx);
+                        const kp2 = features[i+1].keypoints.get(match.trainIdx);
+                        
+                        srcPoints.push(kp1.pt.x, kp1.pt.y);
+                        dstPoints.push(kp2.pt.x, kp2.pt.y);
+                    }
+                    
+                    // 转换为Mat
+                    const srcPointsMat = cv.matFromArray(srcPoints.length / 2, 1, cv.CV_32FC2, srcPoints);
+                    const dstPointsMat = cv.matFromArray(dstPoints.length / 2, 1, cv.CV_32FC2, dstPoints);
+                    
+                    // 计算单应性矩阵
+                    const H = cv.findHomography(dstPointsMat, srcPointsMat, cv.RANSAC, reprojThresh);
+                    
+                    // 获取结果图像的尺寸
+                    const currentWidth = resultMat.cols;
+                    const currentHeight = resultMat.rows;
+                    const nextWidth = cvImages[i+1].original.cols;
+                    const nextHeight = cvImages[i+1].original.rows;
+                    
+                    // 计算变换后的角点坐标
+                    const corners = new cv.Mat(4, 1, cv.CV_32FC2);
+                    const cornersTransformed = new cv.Mat(4, 1, cv.CV_32FC2);
+                    
+                    // 设置原始角点坐标
+                    corners.data32F[0] = 0;              // 左上
+                    corners.data32F[1] = 0;
+                    corners.data32F[2] = 0;              // 左下
+                    corners.data32F[3] = nextHeight;
+                    corners.data32F[4] = nextWidth;      // 右上
+                    corners.data32F[5] = 0;
+                    corners.data32F[6] = nextWidth;      // 右下
+                    corners.data32F[7] = nextHeight;
+                    
+                    // 透视变换角点
+                    cv.perspectiveTransform(corners, cornersTransformed, H);
+                    
+                    // 计算输出图像的大小
+                    let minX = 0, minY = 0, maxX = currentWidth, maxY = currentHeight;
+                    
+                    for (let j = 0; j < 4; j++) {
+                        const x = cornersTransformed.data32F[j*2];
+                        const y = cornersTransformed.data32F[j*2 + 1];
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                    }
+                    
+                    // 创建平移矩阵
+                    const translateMatrix = new cv.Mat(3, 3, cv.CV_64F);
+                    translateMatrix.data64F[0] = 1;  translateMatrix.data64F[1] = 0;  translateMatrix.data64F[2] = -minX;
+                    translateMatrix.data64F[3] = 0;  translateMatrix.data64F[4] = 1;  translateMatrix.data64F[5] = -minY;
+                    translateMatrix.data64F[6] = 0;  translateMatrix.data64F[7] = 0;  translateMatrix.data64F[8] = 1;
+                    
+                    // 计算最终变换矩阵
+                    const finalTransform = new cv.Mat();
+                    cv.matMul(translateMatrix, H, finalTransform);
+                    
+                    // 设置输出图像尺寸
+                    const outputWidth = Math.ceil(maxX - minX);
+                    const outputHeight = Math.ceil(maxY - minY);
+                    
+                    // 创建结果图像
+                    const warpedNext = new cv.Mat();
+                    cv.warpPerspective(
+                        cvImages[i+1].original, 
+                        warpedNext, 
+                        finalTransform, 
+                        new cv.Size(outputWidth, outputHeight)
+                    );
+                    
+                    // 创建结果图像的副本
+                    const warpedResult = new cv.Mat();
+                    cv.warpPerspective(
+                        resultMat, 
+                        warpedResult, 
+                        translateMatrix, 
+                        new cv.Size(outputWidth, outputHeight)
+                    );
+                    
+                    // 合并两张图片
+                    for (let y = 0; y < outputHeight; y++) {
+                        for (let x = 0; x < outputWidth; x++) {
+                            // 获取warpedResult中的像素
+                            const resultPixel = warpedResult.ucharPtr(y, x);
+                            
+                            // 如果结果像素是黑色的（未被填充），则使用warpedNext中的像素
+                            if (resultPixel[0] === 0 && resultPixel[1] === 0 && resultPixel[2] === 0) {
+                                const nextPixel = warpedNext.ucharPtr(y, x);
+                                resultPixel[0] = nextPixel[0];
+                                resultPixel[1] = nextPixel[1];
+                                resultPixel[2] = nextPixel[2];
+                                resultPixel[3] = nextPixel[3];
+                            }
+                        }
+                    }
+                    
+                    // 更新结果
+                    resultMat.delete();
+                    resultMat = warpedResult.clone();
+                    
+                    // 释放内存
+                    warpedNext.delete();
+                    warpedResult.delete();
+                    corners.delete();
+                    cornersTransformed.delete();
+                    srcPointsMat.delete();
+                    dstPointsMat.delete();
+                    H.delete();
+                    translateMatrix.delete();
+                    finalTransform.delete();
+                    matcher.delete();
+                    matches.delete();
+                    goodMatches.delete();
