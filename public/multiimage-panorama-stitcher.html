@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多图像全景拼接工具</title>
+    <!-- 修改加载方式，添加onload和onerror回调 -->
+    <script src="/libs/opencv.js" onload="onOpenCVLoaded()" onerror="handleOpenCVError()"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .upload-section {
+            border: 2px dashed #3498db;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .image-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .preview-item {
+            position: relative;
+            width: 200px;
+            margin-bottom: 15px;
+        }
+        .preview-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .result-section {
+            margin-top: 30px;
+            display: none;
+        }
+        .result-section img {
+            max-width: 100%;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .instructions {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .status {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .debug-section {
+            margin-top: 20px;
+            display: none;
+        }
+        .debug-canvas {
+            max-width: 100%;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+        .controls-section {
+            background-color: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .control-group label {
+            width: 200px;
+            font-weight: bold;
+        }
+        .image-order {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            justify-content: center;
+        }
+        .order-btn {
+            background-color: #e0e0e0;
+            border: none;
+            width: 24px;
+            height: 24px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .order-label {
+            font-weight: bold;
+        }
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>多图像全景拼接工具</h1>
+        
+        <div class="instructions">
+            <h2>使用说明</h2>
+            <ol>
+                <li>上传2张或以上需要拼接的图像（请按从左到右的顺序上传或调整顺序）</li>
+                <li>可以调整参数以获得更好的拼接效果</li>
+                <li>点击"开始拼接"按钮进行图像拼接</li>
+                <li>处理完成后，可以预览并下载拼接结果</li>
+            </ol>
+        </div>
+        
+        <div id="opencvStatus" class="status">正在加载OpenCV.js，请稍候...</div>
+        
+        <div class="upload-section">
+            <p>上传需要拼接的图像（按从左到右的顺序）</p>
+            <input type="file" id="fileInput" accept="image/*" multiple>
+            <button class="btn" id="uploadBtn">选择文件</button>
+        </div>
+        
+        <div class="image-preview" id="imagePreview"></div>
+        
+        <div class="controls-section">
+            <h3>高级参数设置</h3>
+            <div class="control-group">
+                <label for="ratioSlider">Lowe比率测试阈值:</label>
+                <input type="range" id="ratioSlider" min="50" max="95" value="75" step="5">
+                <span id="ratioValue">0.75</span>
+            </div>
+            <div class="control-group">
+                <label for="reprojThreshSlider">RANSAC重投影阈值:</label>
+                <input type="range" id="reprojThreshSlider" min="10" max="100" value="40" step="5">
+                <span id="reprojThreshValue">4.0</span>
+            </div>
+            <div class="control-group">
+                <label for="showMatchesCheckbox">显示匹配结果:</label>
+                <input type="checkbox" id="showMatchesCheckbox" checked>
+            </div>
+        </div>
+        
+        <div style="text-align: center;">
+            <button class="btn" id="stitchBtn" disabled>开始拼接</button>
+            <button class="btn" id="clearBtn">清除所有图像</button>
+            <button class="btn" id="downloadBtn" style="display: none;">下载全景图</button>
+        </div>
+        
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p id="processingStatus">正在拼接图像，请稍候...</p>
+        </div>
+        
+        <div class="progress-container" id="progressContainer">
+            <div id="progressStatus">处理进度</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="debug-section" id="debugSection">
+            <h3>匹配结果</h3>
+            <div id="matchesContainer"></div>
+        </div>
+        
+        <div class="result-section" id="resultSection">
+            <h2>拼接结果</h2>
+            <img id="resultImage" alt="全景拼接结果">
+        </div>
+    </div>
+    
+    <footer>
+        <p>© 2025 多图像全景拼接工具 | 基于OpenCV.js实现</p>
+    </footer>
+
+    <script>
+        // 全局变量
+        let uploadedImages = [];
+        let cvReady = false;
+        
+        // DOM元素
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const imagePreview = document.getElementById('imagePreview');
+        const stitchBtn = document.getElementById('stitchBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultSection = document.getElementById('resultSection');
+        const resultImage = document.getElementById('resultImage');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const processingStatus = document.getElementById('processingStatus');
+        const opencvStatus = document.getElementById('opencvStatus');
+        const debugSection = document.getElementById('debugSection');
+        const matchesContainer = document.getElementById('matchesContainer');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressStatus = document.getElementById('progressStatus');
+        
+        // 控制元素
+        const ratioSlider = document.getElementById('ratioSlider');
+        const ratioValue = document.getElementById('ratioValue');
+        const reprojThreshSlider = document.getElementById('reprojThreshSlider');
+        const reprojThreshValue = document.getElementById('reprojThreshValue');
+        const showMatchesCheckbox = document.getElementById('showMatchesCheckbox');
+
+        // OpenCV.js加载错误处理
+        function handleOpenCVError() {
+            const status = document.getElementById('opencvStatus');
+            status.textContent = 'OpenCV.js加载失败! 请刷新页面或联系管理员。';
+            status.style.color = 'red';
+        }
+
+        // OpenCV.js加载成功回调
+        function onOpenCVLoaded() {
+            const status = document.getElementById('opencvStatus');
+            status.textContent = 'OpenCV.js已加载完成！';
+            status.style.color = 'green';
+            cvReady = true;
+            updateStitchButtonState();
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 更新进度条
+        function updateProgress(percent, message) {
+            progressFill.style.width = `${percent}%`;
+            progressStatus.textContent = message;
+        }
+        
+        // 更新滑块显示值
+        ratioSlider.addEventListener('input', () => {
+            const value = ratioSlider.value / 100;
+            ratioValue.textContent = value.toFixed(2);
+        });
+        
+        reprojThreshSlider.addEventListener('input', () => {
+            const value = reprojThreshSlider.value / 10;
+            reprojThreshValue.textContent = value.toFixed(1);
+        });
+        
+        // 显示/隐藏调试信息
+        showMatchesCheckbox.addEventListener('change', () => {
+            debugSection.style.display = showMatchesCheckbox.checked ? 'block' : 'none';
+        });
+        
+        // 事件监听
+        uploadBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        clearBtn.addEventListener('click', clearAllImages);
+        stitchBtn.addEventListener('click', startStitching);
+        downloadBtn.addEventListener('click', downloadResult);
+        
+        // 更新拼接按钮状态
+        function updateStitchButtonState() {
+            stitchBtn.disabled = uploadedImages.length < 2 || !cvReady;
+        }
+        
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+            
+            const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length === 0) {
+                alert('请选择有效的图像文件');
+                return;
+            }
+            
+            // 添加到上传图像数组
+            let loadedCount = 0;
+            imageFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImages.push({
+                        file: file,
+                        src: e.target.result,
+                        name: file.name
+                    });
+                    
+                    loadedCount++;
+                    if (loadedCount === imageFiles.length) {
+                        // 只有当所有图像加载完成后才更新预览
+                        updateImagePreview();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // 更新图像预览
+        function updateImagePreview() {
+            imagePreview.innerHTML = '';
+            
+            uploadedImages.forEach((img, index) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item';
+                
+                const imgElement = document.createElement('img');
+                imgElement.src = img.src;
+                imgElement.alt = img.name;
+                imgElement.title = img.name;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-btn';
+                removeBtn.innerHTML = '×';
+                removeBtn.title = '移除图像';
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation(); // 防止事件冒泡
+                    removeImage(index);
+                };
+                
+                previewItem.appendChild(imgElement);
+                previewItem.appendChild(removeBtn);
+                
+                // 添加顺序控制按钮
+                const orderControls = document.createElement('div');
+                orderControls.className = 'image-order';
+                
+                const leftBtn = document.createElement('button');
+                leftBtn.className = 'order-btn';
+                leftBtn.innerHTML = '←';
+                leftBtn.title = '向左移动';
+                leftBtn.disabled = index === 0;
+                leftBtn.onclick = (e) => {
+                    e.stopPropagation(); // 防止事件冒泡
+                    moveImage(index, index - 1);
+                };
+                
+                const orderLabel = document.createElement('span');
+                orderLabel.className = 'order-label';
+                orderLabel.textContent = index + 1;
+                
+                const rightBtn = document.createElement('button');
+                rightBtn.className = 'order-btn';
+                rightBtn.innerHTML = '→';
+                rightBtn.title = '向右移动';
+                rightBtn.disabled = index === uploadedImages.length - 1;
+                rightBtn.onclick = (e) => {
+                    e.stopPropagation(); // 防止事件冒泡
+                    moveImage(index, index + 1);
+                };
+                
+                orderControls.appendChild(leftBtn);
+                orderControls.appendChild(orderLabel);
+                orderControls.appendChild(rightBtn);
+                
+                previewItem.appendChild(orderControls);
+                
+                imagePreview.appendChild(previewItem);
+            });
+            
+            // 更新拼接按钮状态
+            updateStitchButtonState();
+        }
+        
+        // 移除图像
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            updateImagePreview();
+        }
+        
+        // 调整图像顺序
+        function moveImage(fromIndex, toIndex) {
+            if (toIndex < 0 || toIndex >= uploadedImages.length) return;
+            
+            const temp = uploadedImages[fromIndex];
+            uploadedImages[fromIndex] = uploadedImages[toIndex];
+            uploadedImages[toIndex] = temp;
+            
+            updateImagePreview();
+        }
+        
+        // 清除所有图像
+        function clearAllImages() {
+            uploadedImages = [];
+            updateImagePreview();
+            resultSection.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            debugSection.style.display = 'none';
+            progressContainer.style.display = 'none';
+            matchesContainer.innerHTML = '';
+        }
+        
+        // 开始拼接处理
+        function startStitching() {
+            if (uploadedImages.length < 2 || !cvReady) {
+                alert('请至少上传2张图像，并确保OpenCV.js已加载完成');
+                return;
+            }
+            
+            // 获取参数设置
+            const ratio = ratioSlider.value / 100;
+            const reprojThresh = reprojThreshSlider.value / 10;
+            const showMatches = showMatchesCheckbox.checked;
+            
+            // 显示加载指示器
+            loadingIndicator.style.display = 'block';
+            progressContainer.style.display = 'block';
+            stitchBtn.disabled = true;
+            resultSection.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            debugSection.style.display = 'none';
+            matchesContainer.innerHTML = '';
+            
+            // 重置进度条
+            updateProgress(0, '准备处理...');
+            
+            // 预加载图像
+            const imageElements = [];
+            let loadedCount = 0;
+            
+            uploadedImages.forEach((imgData, index) => {
+                const img = new Image();
+                img.onload = function() {
+                    loadedCount++;
+                    updateProgress((loadedCount / uploadedImages.length) * 10, `加载图像 ${loadedCount}/${uploadedImages.length}...`);
+                    
+                    if (loadedCount === uploadedImages.length) {
+                        // 所有图像加载完成，开始拼接
+                        setTimeout(() => {
+                            stitchImages(imageElements, ratio, reprojThresh, showMatches);
+                        }, 100);
+                    }
+                };
+                img.onerror = function() {
+                    loadingIndicator.style.display = 'none';
+                    progressContainer.style.display = 'none';
+                    stitchBtn.disabled = false;
+                    alert(`图像 ${index + 1} 加载失败`);
+                };
+                img.src = imgData.src;
+                imageElements.push(img);
+            });
+        }
+        
+        // 检测和描述特征点
+        function detectAndDescribe(img) {
+            updateProgress(15, '检测特征点...');
+            
+            // 创建canvas来获取像素数据
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            // 获取ImageData
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // 转换为OpenCV矩阵
+            let src = cv.matFromImageData(imageData);
+            
+            // 转换为灰度图
+            let gray = new cv.Mat();
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+            
+            // 创建SIFT特征检测器
+            const descriptor = new cv.SIFT();
+            
+            // 检测特征点和计算描述符
+            const keypoints = new cv.KeyPointVector();
+            const descriptors = new cv.Mat();
+            descriptor.detectAndCompute(gray, new cv.Mat(), keypoints, descriptors);
+            
+            // 将关键点转换为简单的点坐标数组
+            const points = [];
+            for (let i = 0; i < keypoints.size(); i++) {
+                const pt = keypoints.get(i).pt;
+                points.push([pt.x, pt.y]);
+            }
+            
+            // 清理内存
+            gray.delete();
+            src.delete();
+            
+            return {keypoints, descriptors, points};
+        }
+        
+        // 匹配两组特征点
+        function matchKeypoints(kpsA, kpsB, featuresA, featuresB, ratio, reprojThresh) {
+            updateProgress(30, '匹配特征点...');
+            
+            // 创建特征匹配器 (BFMatcher with k=2)
+            const matcher = new cv.BFMatcher();
+            const matches = new cv.DMatchVectorVector();
+            matcher.knnMatch(featuresA, featuresB, matches, 2);
+            
+            // 应用Lowe的比率测试
+            const goodMatches = new cv.DMatchVector();
+            for (let i = 0; i < matches.size(); i++) {
+                if (matches.get(i).size() < 2) continue;
+                
+                const m = matches.get(i).get(0);
+                const n = matches.get(i).get(1);
+                
+                if (m.distance < ratio * n.distance) {
+                    goodMatches.push_back(m);
+                }
+            }
+            
+            // 需要至少4个匹配点才能计算单应性矩阵
+            if (goodMatches.size() >= 4) {
+                // 构建两组点
+                const srcPoints = new cv.Mat(goodMatches.size(), 1, cv.CV_32FC2);
+                const dstPoints = new cv.Mat(goodMatches.size(), 1, cv.CV_32FC2);
+                
+                for (let i = 0; i < goodMatches.size(); i++) {
+                    const queryIdx = goodMatches.get(i).queryIdx;
+                    const trainIdx = goodMatches.get(i).trainIdx;
+                    
+                    const queryPt = kpsA.get(queryIdx).pt;
+                    const trainPt = kpsB.get(trainIdx).pt;
+                    
+                    srcPoints.data32F[i * 2] = queryPt.x;
+                    srcPoints.data32F[i * 2 + 1] = queryPt.y;
+                    dstPoints.data32F[i * 2] = trainPt.x;
+                    dstPoints.data32F[i * 2 + 1] = trainPt.y;
+                }
+                
+                // 计算单应性矩阵
+                const H = cv.findHomography(srcPoints, dstPoints, cv.RANSAC, reprojThresh);
+                
+                // 计算内点掩码
+                const mask = new cv.Mat();
+                const status = [];
+                for (let i = 0; i < goodMatches.size(); i++) {
+                    status.push(1); // 默认所有匹配都是好的
+                }
+                
+                // 清理内存
+                srcPoints.delete();
+                dstPoints.delete();
+                matches.delete();
+                
+                return {matches: goodMatches, H, status};
+            }
+            
+            // 清理内存
+            matches.delete();
+            
+            // 匹配失败
+            return null;
+        }
+        
+        // 绘制匹配
+        function drawMatches(imageA, imageB, kpsA, kpsB, matches, status) {
+            // 获取图像尺寸
+            const hA = imageA.height;
+            const wA = imageA.width;
+            const hB = imageB.height;
+            const wB = imageB.width;
+            
+            // 创建画布
+            const canvas = document.createElement('canvas');
+            canvas.width = wA + wB;
+            canvas.height = Math.max(hA, hB);
+            const ctx = canvas.getContext('2d');
+            
+            // 绘制两张图像
+            ctx.drawImage(imageA, 0, 0);
+            ctx.drawImage(imageB, wA, 0);
+            
+            // 绘制匹配线
+            ctx.strokeStyle = 'lime';
+            ctx.lineWidth = 1;
+            
+            // 最多显示100个匹配点，以避免过度拥挤
+            const maxMatches = Math.min(100, matches.size());
+            
+            for (let i = 0; i < maxMatches; i++) {
+                const m = matches.get(i);
+                const ptA = kpsA.get(m.queryIdx).pt;
+                const ptB = kpsB.get(m.trainIdx).pt;
+                
+                // 添加wA的偏移到imageB上的点
+                ctx.beginPath();
+                ctx.moveTo(ptA.x, ptA.y);
+                ctx.lineTo(ptB.x + wA, ptB.y);
+                ctx.stroke();
+            }
+            
+            return canvas;
+        }
+        
+        // 图像拼接流程
+        function stitchImages(imageElements, ratio, reprojThresh, showMatches) {
+            try {
+                // 转换图像为OpenCV格式
+                const cvImages = [];
+                for (let i = 0; i < imageElements.length; i++) {
+                    const img = imageElements[i];
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const mat = cv.matFromImageData(imgData);
+                    
+                    // 转换为BGR格式
+                    const matBGR = new cv.Mat();
+                    cv.cvtColor(mat, matBGR, cv.COLOR_RGBA2BGR);
+                    
+                    cvImages.push(matBGR);
+                    mat.delete();
+                }
+                
+                // 以第一张图像为基准，依次拼接
+                let result = cvImages[0].clone();
+                const debugCanvases = [];
+                
+                // 拼接每一对相邻图像
+                for (let i = 1; i < cvImages.length; i++) {
+                    updateProgress(40 + (i-1) * 60 / (cvImages.length-1), `拼接图像 ${i+1}/${cvImages.length}...`);
+                    
+                    // 检测特征点
+                    const resultFeatures = detectAndDescribe(imageElements[i-1]);
+                    const nextFeatures = detectAndDescribe(imageElements[i]);
+                    
+                    // 匹配特征点
+                    const M = matchKeypoints(
+                        nextFeatures.keypoints, 
+                        resultFeatures.keypoints,
+                        nextFeatures.descriptors, 
+                        resultFeatures.descriptors, 
+                        ratio, 
+                        reprojThresh
+                    );
+                    
+                    if (M === null) {
+                        alert(`图像 ${i} 和图像 ${i+1} 之间的匹配失败！`);
+                        throw new Error(`匹配失败: 图像 ${i} 和图像 ${i+1}`);
+                    }
+                    
+                    const {matches, H, status} = M;
+                    
+                    // 如果需要显示匹配调试信息
+                    if (showMatches) {
+                        const matchesCanvas = drawMatches(
+                            imageElements[i], 
+                            imageElements[i-1], 
+                            nextFeatures.keypoints, 
+                            resultFeatures.keypoints, 
+                            matches, 
+                            status
+                        );
+                        debugCanvases.push(matchesCanvas);
+                    }
+                    
+                    // 计算变换后的图像尺寸和偏移
+                    const h_result = result.rows;
+                    const w_result = result.cols;
+                    const h_next = cvImages[i].rows;
+                    const w_next = cvImages[i].cols;
+                    
+                    // 创建四个角点，用于确定变换后的图像大小
+                    const pts1 = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                        0, 0,                  // 左上
+                        0, h_result,           // 左下
+                        w_result, h_result,    // 右下
+                        w_result, 0            // 右上
+                    ]);
+                    
+                    const pts2 = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                        0, 0,            // 左上
+                        0, h_next,       // 左下
+                        w_next, h_next,  // 右下
+                        w_next, 0        // 右上
+                    ]);
+                    
+                    // 应用变换矩阵到下一张图像的边界点
+                    const pts2_ = new cv.Mat();
+                    cv.perspectiveTransform(pts2, pts2_, H);
+                    
+                    // 计算拼接后图像的边界
+                    let xMin = Number.MAX_VALUE;
