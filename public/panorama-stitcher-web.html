@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全景图像拼接工具</title>
+   <script src="/libs/opencv.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .upload-section {
+            border: 2px dashed #3498db;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .image-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .preview-item {
+            position: relative;
+            width: 200px;
+            margin-bottom: 15px;
+        }
+        .preview-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .result-section {
+            margin-top: 30px;
+            display: none;
+        }
+        .result-section img {
+            max-width: 100%;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .instructions {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .status {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+            color: #3498db;
+        }
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .image-order {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            justify-content: center;
+        }
+        .order-btn {
+            background-color: #e0e0e0;
+            border: none;
+            width: 24px;
+            height: 24px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .order-label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>全景图像拼接工具</h1>
+        
+        <div class="instructions">
+            <h2>使用说明</h2>
+            <ol>
+                <li>上传2张或以上需要拼接的图像（请按从左到右的顺序上传或调整顺序）</li>
+                <li>点击"开始拼接"按钮进行图像拼接</li>
+                <li>处理完成后，可以预览并下载拼接结果</li>
+            </ol>
+        </div>
+        
+        <div id="opencvStatus" class="status">正在加载OpenCV.js，请稍候...</div>
+        
+        <div class="upload-section">
+            <p>上传需要拼接的图像（按从左到右的顺序）</p>
+            <input type="file" id="fileInput" accept="image/*" multiple>
+            <button class="btn" id="uploadBtn">选择文件</button>
+        </div>
+        
+        <div class="image-preview" id="imagePreview"></div>
+        
+        <div style="text-align: center;">
+            <button class="btn" id="stitchBtn" disabled>开始拼接</button>
+            <button class="btn" id="clearBtn">清除所有图像</button>
+            <button class="btn" id="downloadBtn" style="display: none;">下载全景图</button>
+        </div>
+        
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p id="processingStatus">正在拼接图像，请稍候...</p>
+        </div>
+        
+        <div class="result-section" id="resultSection">
+            <h2>拼接结果</h2>
+            <img id="resultImage" alt="全景拼接结果">
+        </div>
+    </div>
+    
+    <footer>
+        <p>© 2025 全景图像拼接工具 | 基于OpenCV.js实现</p>
+    </footer>
+
+    <script>
+        // 全局变量
+        let uploadedImages = [];
+        let cvReady = false;
+        
+        // DOM元素
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const imagePreview = document.getElementById('imagePreview');
+        const stitchBtn = document.getElementById('stitchBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultSection = document.getElementById('resultSection');
+        const resultImage = document.getElementById('resultImage');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const processingStatus = document.getElementById('processingStatus');
+        const opencvStatus = document.getElementById('opencvStatus');
+        
+        // OpenCV.js 加载状态检查
+        function checkOpenCVReady() {
+            if (typeof cv !== 'undefined') {
+                cvReady = true;
+                opencvStatus.textContent = 'OpenCV.js 已加载完成！';
+                opencvStatus.style.color = 'green';
+                setTimeout(() => {
+                    opencvStatus.style.display = 'none';
+                }, 3000);
+            } else {
+                setTimeout(checkOpenCVReady, 500);
+            }
+        }
+        
+        // 页面加载时检查OpenCV状态
+        window.addEventListener('load', checkOpenCVReady);
+        
+        // 事件监听
+        uploadBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        clearBtn.addEventListener('click', clearAllImages);
+        stitchBtn.addEventListener('click', startStitching);
+        downloadBtn.addEventListener('click', downloadResult);
+        
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+            
+            const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length === 0) {
+                alert('请选择有效的图像文件');
+                return;
+            }
+            
+            // 添加到上传图像数组
+            imageFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImages.push({
+                        file: file,
+                        src: e.target.result,
+                        name: file.name
+                    });
+                    updateImagePreview();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // 更新图像预览
+        function updateImagePreview() {
+            imagePreview.innerHTML = '';
+            
+            uploadedImages.forEach((img, index) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item';
+                
+                const imgElement = document.createElement('img');
+                imgElement.src = img.src;
+                imgElement.alt = img.name;
+                imgElement.title = img.name;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-btn';
+                removeBtn.innerHTML = '×';
+                removeBtn.title = '移除图像';
+                removeBtn.onclick = () => removeImage(index);
+                
+                previewItem.appendChild(imgElement);
+                previewItem.appendChild(removeBtn);
+                
+                // 添加顺序控制按钮
+                const orderControls = document.createElement('div');
+                orderControls.className = 'image-order';
+                
+                const leftBtn = document.createElement('button');
+                leftBtn.className = 'order-btn';
+                leftBtn.innerHTML = '←';
+                leftBtn.title = '向左移动';
+                leftBtn.disabled = index === 0;
+                leftBtn.onclick = () => moveImage(index, index - 1);
+                
+                const orderLabel = document.createElement('span');
+                orderLabel.className = 'order-label';
+                orderLabel.textContent = index + 1;
+                
+                const rightBtn = document.createElement('button');
+                rightBtn.className = 'order-btn';
+                rightBtn.innerHTML = '→';
+                rightBtn.title = '向右移动';
+                rightBtn.disabled = index === uploadedImages.length - 1;
+                rightBtn.onclick = () => moveImage(index, index + 1);
+                
+                orderControls.appendChild(leftBtn);
+                orderControls.appendChild(orderLabel);
+                orderControls.appendChild(rightBtn);
+                
+                previewItem.appendChild(orderControls);
+                
+                imagePreview.appendChild(previewItem);
+            });
+            
+            // 更新拼接按钮状态
+            stitchBtn.disabled = uploadedImages.length < 2 || !cvReady;
+        }
+        
+        // 移除图像
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            updateImagePreview();
+        }
+        
+        // 调整图像顺序
+        function moveImage(fromIndex, toIndex) {
+            if (toIndex < 0 || toIndex >= uploadedImages.length) return;
+            
+            const temp = uploadedImages[fromIndex];
+            uploadedImages[fromIndex] = uploadedImages[toIndex];
+            uploadedImages[toIndex] = temp;
+            
+            updateImagePreview();
+        }
+        
+        // 清除所有图像
+        function clearAllImages() {
+            uploadedImages = [];
+            updateImagePreview();
+            resultSection.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+        
+        // 开始拼接处理
+        function startStitching() {
+            if (uploadedImages.length < 2 || !cvReady) {
+                alert('请至少上传2张图像，并确保OpenCV.js已加载完成');
+                return;
+            }
+            
+            // 显示加载指示器
+            loadingIndicator.style.display = 'block';
+            stitchBtn.disabled = true;
+            resultSection.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            
+            // 预加载图像
+            const imageElements = [];
+            let loadedCount = 0;
+            
+            uploadedImages.forEach((imgData, index) => {
+                const img = new Image();
+                img.onload = function() {
+                    loadedCount++;
+                    if (loadedCount === uploadedImages.length) {
+                        // 所有图像加载完成，开始拼接
+                        processPanoramaStitching(imageElements);
+                    }
+                };
+                img.onerror = function() {
+                    loadingIndicator.style.display = 'none';
+                    stitchBtn.disabled = false;
+                    alert(`图像 ${index + 1} 加载失败`);
+                };
+                img.src = imgData.src;
+                imageElements.push(img);
+            });
+        }
+        
+        // 处理全景拼接
+        function processPanoramaStitching(imageElements) {
+            try {
+                processingStatus.textContent = '正在处理特征点检测...';
+                
+                // 将图像转换为OpenCV矩阵
+                const cvImages = imageElements.map(img => {
+                    // 创建canvas来获取像素数据
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // 获取ImageData
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // 转换为OpenCV矩阵
+                    let mat = cv.matFromImageData(imageData);
+                    
+                    // 转换为BGR格式
+                    let matBGR = new cv.Mat();
+                    cv.cvtColor(mat, matBGR, cv.COLOR_RGBA2BGR);
+                    
+                    mat.delete();
+                    return matBGR;
+                });
+                
+                // 使用OpenCV的Stitcher API
+                setTimeout(() => {
+                    try {
+                        processingStatus.textContent = '正在执行图像拼接...';
+                        
+                        // 创建一个输出矩阵数组
+                        let stitchedImage = cvImages[0].clone();
+                        
+                        // 逐一拼接每张图像
+                        for (let i = 1; i < cvImages.length; i++) {
+                            processingStatus.textContent = `正在拼接图像 ${i + 1}/${cvImages.length}...`;
+                            
+                            // 创建特征检测器
+                            const detector = new cv.ORB();
+                            
+                            // 第一张图像的特征点和描述符
+                            const kp1 = new cv.KeyPointVector();
+                            const des1 = new cv.Mat();
+                            const gray1 = new cv.Mat();
+                            cv.cvtColor(stitchedImage, gray1, cv.COLOR_BGR2GRAY);
+                            detector.detectAndCompute(gray1, new cv.Mat(), kp1, des1);
+                            
+                            // 第二张图像的特征点和描述符
+                            const kp2 = new cv.KeyPointVector();
+                            const des2 = new cv.Mat();
+                            const gray2 = new cv.Mat();
+                            cv.cvtColor(cvImages[i], gray2, cv.COLOR_BGR2GRAY);
+                            detector.detectAndCompute(gray2, new cv.Mat(), kp2, des2);
+                            
+                            // 特征点匹配
+                            const matches = new cv.DMatchVector();
+                            const matcher = new cv.BFMatcher(cv.NORM_HAMMING, true);
+                            matcher.match(des1, des2, matches);
+                            
+                            // 排序并选择最佳匹配
+                            const goodMatches = [];
+                            for (let j = 0; j < Math.min(matches.size(), 100); j++) {
+                                goodMatches.push(matches.get(j));
+                            }
+                            
+                            // 提取匹配点坐标
+                            const srcPoints = [];
+                            const dstPoints = [];
+                            for (let j = 0; j < goodMatches.length; j++) {
+                                const match = goodMatches[j];
+                                const kp1Point = kp1.get(match.queryIdx);
+                                const kp2Point = kp2.get(match.trainIdx);
+                                srcPoints.push(new cv.Point(Math.round(kp1Point.pt.x), Math.round(kp1Point.pt.y)));
+                                dstPoints.push(new cv.Point(Math.round(kp2Point.pt.x), Math.round(kp2Point.pt.y)));
+                            }
+                            
+                            // 将点转换为矩阵
+                            const srcMat = cv.Mat.zeros(srcPoints.length, 1, cv.CV_32FC2);
+                            const dstMat = cv.Mat.zeros(dstPoints.length, 1, cv.CV_32FC2);
+                            for (let j = 0; j < srcPoints.length; j++) {
+                                srcMat.data32F[j * 2] = srcPoints[j].x;
+                                srcMat.data32F[j * 2 + 1] = srcPoints[j].y;
+                                dstMat.data32F[j * 2] = dstPoints[j].x;
+                                dstMat.data32F[j * 2 + 1] = dstPoints[j].y;
+                            }
+                            
+                            // 计算单应性矩阵
+                            const H = cv.findHomography(dstMat, srcMat, cv.RANSAC, 4.0);
+                            
+                            // 确定输出尺寸
+                            const h1 = stitchedImage.rows;
+                            const w1 = stitchedImage.cols;
+                            const h2 = cvImages[i].rows;
+                            const w2 = cvImages[i].cols;
+                            
+                            // 变换第二张图像的角点
+                            const corners = [
+                                {x: 0, y: 0},
+                                {x: w2, y: 0},
+                                {x: w2, y: h2},
+                                {x: 0, y: h2}
+                            ];
+                            
+                            const transformedCorners = corners.map(point => {
+                                const x = (H.data64F[0] * point.x + H.data64F[1] * point.y + H.data64F[2]) /
+                                        (H.data64F[6] * point.x + H.data64F[7] * point.y + H.data64F[8]);
+                                const y = (H.data64F[3] * point.x + H.data64F[4] * point.y + H.data64F[5]) /
+                                        (H.data64F[6] * point.x + H.data64F[7] * point.y + H.data64F[8]);
+                                return {x, y};
+                            });
+                            
+                            // 获取拼接图像的尺寸
+                            let minX = Math.min(0, ...transformedCorners.map(p => p.x));
+                            let maxX = Math.max(w1, ...transformedCorners.map(p => p.x));
+                            let minY = Math.min(0, ...transformedCorners.map(p => p.y));
+                            let maxY = Math.max(h1, ...transformedCorners.map(p => p.y));
+                            
+                            // 创建结果图像
+                            const newWidth = Math.ceil(maxX - minX);
+                            const newHeight = Math.ceil(maxY - minY);
+                            
+                            // 平移矩阵
+                            const T = cv.matFromArray(3, 3, cv.CV_64F, [
+                                1, 0, -minX,
+                                0, 1, -minY,
+                                0, 0, 1
+                            ]);
+                            
+                            // 应用变换
+                            const warpedImage1 = new cv.Mat();
+                            cv.warpPerspective(stitchedImage, warpedImage1, T, new cv.Size(newWidth, newHeight));
+                            
+                            const warpedImage2 = new cv.Mat();
+                            const combinedTransform = new cv.Mat();
+                            cv.gemm(T, H, 1, new cv.Mat(), 0, combinedTransform);
+                            cv.warpPerspective(cvImages[i], warpedImage2, combinedTransform, new cv.Size(newWidth, newHeight));
+                            
+                            // 创建简单融合
+                            const result = warpedImage1.clone();
+                            
+                            // 使用简单覆盖策略
+                            for (let y = 0; y < newHeight; y++) {
+                                for (let x = 0; x < newWidth; x++) {
+                                    const pixel2 = warpedImage2.ucharPtr(y, x);
+                                    // 如果第二张图像在这个位置有内容（不是黑色）
+                                    if (pixel2[0] > 0 || pixel2[1] > 0 || pixel2[2] > 0) {
+                                        const pixel1 = result.ucharPtr(y, x);
+                                        pixel1[0] = pixel2[0];
+                                        pixel1[1] = pixel2[1];
+                                        pixel1[2] = pixel2[2];
+                                    }
+                                }
+                            }
+                            
+                            // 更新拼接结果
+                            stitchedImage.delete();
+                            stitchedImage = result.clone();
+                            
+                            // 清理资源
+                            gray1.delete();
+                            gray2.delete();
+                            des1.delete();
+                            des2.delete();
+                            H.delete();
+                            T.delete();
+                            warpedImage1.delete();
+                            warpedImage2.delete();
+                            combinedTransform.delete();
+                            result.delete();
+                            srcMat.delete();
+                            dstMat.delete();
+                        }
+                        
+                        // 转换为RGBA显示
+                        processingStatus.textContent = '正在准备结果...';
+                        let resultMat = new cv.Mat();
+                        cv.cvtColor(stitchedImage, resultMat, cv.COLOR_BGR2RGBA);
+                        
+                        // 显示结果
+                        const canvas = document.createElement('canvas');
+                        canvas.width = resultMat.cols;
+                        canvas.height = resultMat.rows;
+                        cv.imshow(canvas, resultMat);
+                        
+                        resultImage.src = canvas.toDataURL();
+                        resultSection.style.display = 'block';
+                        downloadBtn.style.display = 'inline-block';
+                        
+                        // 清理资源
+                        cvImages.forEach(img => img.delete());
+                        stitchedImage.delete();
+                        resultMat.delete();
+                        
+                        loadingIndicator.style.display = 'none';
+                        stitchBtn.disabled = false;
+                        
+                    } catch (error) {
+                        console.error('拼接过程错误:', error);
+                        processingStatus.textContent = '拼接失败: ' + error.message;
+                        loadingIndicator.style.display = 'none';
+                        stitchBtn.disabled = false;
+                        
+                        // 清理资源
+                        cvImages.forEach(img => {
+                            if (img) img.delete();
+                        });
+                    }
+                }, 100);
+                
+            } catch (error) {
+                console.error('初始化错误:', error);
+                processingStatus.textContent = '处理失败: ' + error.message;
+                loadingIndicator.style.display = 'none';
+                stitchBtn.disabled = false;
+            }
+        }
+        
+        // 下载拼接结果
+        function downloadResult() {
+            if (!resultImage.src) return;
+            
+            const link = document.createElement('a');
+            link.download = 'panorama_result.png';
+            link.href = resultImage.src;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
