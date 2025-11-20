@@ -4,14 +4,14 @@
 
 ## 📚 学习资源
 
-- [数字图像处理笔记](https://www.glacierchen.asia/数字图像处理复习) 
+- [数字图像处理笔记]([https://www.glacierchen.asia](https://digitalgarden-git-main-glacier-chens-projects.vercel.app/)/数字图像处理复习) 
 - [模式识别](https://www.yuque.com/glacier-hg5di/mnw2m9)
 - [深度学习の大杂烩](https://www.yuque.com/glacier-hg5di/deep_learning) -包含关于python基础，coding能力，DeepLearning通用知识or常识(狠狠学习与整理中ing...)
 
 ## 🔧 实用工具
 
 - [日期计算工具大全](/date-calculator) - 各种实用的日期计算功能
-- [ChatGPT论文修改润色Prompt](https://www.glacierchen.asia/Z：Prompts/论文润色Prompt) - 帮助你提升论文质量的AI提示词
+- [ChatGPT论文修改润色Prompt]([https://www.glacierchen.asia](https://digitalgarden-git-main-glacier-chens-projects.vercel.app/)/Z：Prompts/论文润色Prompt) - 帮助你提升论文质量的AI提示词
 
 ## 🎮 休闲游戏
 
