@@ -4,6 +4,7 @@
 
 ## 😷⇒😄 amodal研究
 
+- [amodal相关研究](https://www.yuque.com/glacier_chen/gbqdfv)
 
 
 ## 📚 学习资源
