@@ -7,6 +7,10 @@
 - [amodal相关研究](https://www.yuque.com/glacier_chen/gbqdfv)
 
 
+## ⇒⏩ 起始页开发
+- [简约起始页](/date-calculator) 
+
+
 ## 📚 学习资源
 
 - [数字图像处理笔记]([https://www.glacierchen.asia](https://digitalgarden-git-main-glacier-chens-projects.vercel.app/)/数字图像处理复习) 
