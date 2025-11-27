@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>起始页</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --theme-color: #00d4ff;
+      --bg-dark: rgba(30, 30, 40, 0.85);
+      --bg-darker: rgba(20, 20, 30, 0.95);
+      --bg-card: rgba(40, 40, 55, 0.9);
+      --bg-card-hover: rgba(50, 50, 65, 0.95);
+      --text-primary: rgba(255, 255, 255, 0.95);
+      --text-secondary: rgba(255, 255, 255, 0.7);
+      --text-muted: rgba(255, 255, 255, 0.5);
+      --border: rgba(255, 255, 255, 0.1);
+      --shadow: rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      background: #1a1a2e;
+      color: var(--text-primary);
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* 背景图片 */
+    .background-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: -2;
+      transition: opacity 0.5s ease;
+    }
+
+    /* 暗角滤镜 */
+    .vignette-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* 主容器 */
+    .main-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    /* 便签固定在左上角 */
+    .pinned-notes {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 220px;
+    }
+
+    .pinned-note {
+      background: rgba(30, 30, 40, 0.7);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .pinned-note:hover {
+      background: rgba(40, 40, 55, 0.8);
+    }
+
+    .pinned-note-title {
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .pinned-note-date {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* 右上角按钮 */
+    .top-right-buttons {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 12px;
+      z-index: 100;
+    }
+
+    .top-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(40, 40, 55, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .top-btn:hover {
+      background: rgba(50, 50, 65, 0.8);
+      color: var(--text-primary);
+    }
+
+    .top-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* 时钟 */
+    .clock-section {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .clock {
+      font-size: 5rem;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      color: var(--text-primary);
+      text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+    }
+
+    /* 搜索框区域 */
+    .search-section {
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 2rem;
+    }
+
+    .search-container {
+      position: relative;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: var(--bg-dark);
+      backdrop-filter: blur(20px);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--theme-color);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+
+    .search-engine-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-right: 1px solid var(--border);
+    }
+
+    .search-engine-btn:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .search-engine-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 14px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-submit-btn {
+      padding: 14px 18px;
+      background: transparent;
+      border: none;
+      color: var(--theme-color);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .search-submit-btn:hover {
+      background: rgba(0, 212, 255, 0.1);
+    }
+
+    .search-submit-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* 搜索引擎下拉菜单 */
+    .search-engine-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      background: var(--bg-darker);
+      backdrop-filter: blur(20px);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 8px 0;
+      min-width: 220px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+      z-index: 1000;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .search-engine-dropdown.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .engine-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--text-secondary);
+    }
+
+    .engine-option:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-primary);
+    }
+
+    .engine-option.active {
+      color: var(--theme-color);
+    }
+
+    .engine-option-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .engine-option-name {
+      flex: 1;
+    }
+
+    .engine-option-shortcut {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .engine-dropdown-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 0;
+    }
+
+    .engine-settings-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--text-muted);
+    }
+
+    .engine-settings-option:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-secondary);
+    }
+
+    /* 一言 */
+    .hitokoto-section {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .hitokoto {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 8px 16px;
+      border-radius: 20px;
+    }
+
+    .hitokoto:hover {
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* 底部快捷栏 */
+    .dock-bar {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      padding: 10px 16px;
+      background: rgba(30, 30, 40, 0.7);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      z-index: 100;
+    }
+
+    .dock-item {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: white;
+      font-size: 20px;
+      position: relative;
+    }
+
+    .dock-item:hover {
+      transform: translateY(-8px) scale(1.1);
+    }
+
+    .dock-item::after {
+      content: attr(data-title);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-darker);
+      color: var(--text-primary);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .dock-item:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* 工作区域（右键菜单打开） */
+    .workspace-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(20, 20, 30, 0.85);
+      backdrop-filter: blur(30px);
+      z-index: 500;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.4s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 40px;
+      overflow-y: auto;
+    }
+
+    .workspace-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .workspace-clock {
+      font-size: 4rem;
+      font-weight: 300;
+      color: var(--text-primary);
+      margin-bottom: 40px;
+    }
+
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 20px;
+      max-width: 900px;
+      width: 100%;
+    }
+
+    .workspace-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 20px;
+      background: var(--bg-card);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: var(--text-primary);
+      border: 1px solid transparent;
+    }
+
+    .workspace-item:hover {
+      background: var(--bg-card-hover);
+      transform: translateY(-4px);
+      border-color: var(--border);
+    }
+
+    .workspace-item-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    }
+
+    .workspace-item-name {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .workspace-add-item {
+      border: 2px dashed var(--border);
+      background: transparent;
+    }
+
+    .workspace-add-item:hover {
+      border-color: var(--theme-color);
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    .workspace-add-icon {
+      font-size: 28px;
+      color: var(--text-muted);
+    }
+
+    /* 设置面板 */
+    .settings-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      max-width: 500px;
+      height: 100vh;
+      background: var(--bg-darker);
+      z-index: 1000;
+      transform: translateX(100%);
+      transition: transform 0.4s ease;
+      overflow-y: auto;
+      border-left: 1px solid var(--border);
+    }
+
+    .settings-panel.show {
+      transform: translateX(0);
+    }
+
+    .settings-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .settings-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .settings-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .settings-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .settings-close:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--text-primary);
+    }
+
+    .settings-content {
+      padding: 24px;
+    }
+
+    .settings-section {
+      margin-bottom: 32px;
+    }
+
+    .settings-section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+
+    .settings-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+
+    .settings-item-label {
+      color: var(--text-secondary);
+    }
+
+    .settings-item-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Toggle 开关 */
+    .toggle {
+      width: 48px;
+      height: 26px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 13px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .toggle.active {
+      background: var(--theme-color);
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: all 0.3s ease;
+    }
+
+    .toggle.active::after {
+      left: 24px;
+    }
+
+    /* 颜色选择器 */
+    .color-options {
+      display: flex;
+      gap: 12px;
+    }
+
+    .color-option {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+    }
+
+    .color-option:hover {
+      transform: scale(1.1);
+    }
+
+    .color-option.active {
+      border-color: white;
+    }
+
+    .color-option.green { background: #4ade80; }
+    .color-option.cyan { background: #00d4ff; }
+    .color-option.purple { background: #a78bfa; }
+    .color-option.pink { background: #f472b6; }
+    .color-option.blue { background: #3b82f6; }
+
+    /* 壁纸选择器 */
+    .wallpaper-section {
+      margin-top: 20px;
+    }
+
+    .wallpaper-upload-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .wallpaper-preview {
+      width: 80px;
+      height: 60px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      overflow: hidden;
+    }
+
+    .wallpaper-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .wallpaper-upload-info h4 {
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .wallpaper-upload-info p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .wallpaper-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .wallpaper-action-btn {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .wallpaper-action-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--text-primary);
+    }
+
+    .wallpaper-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .wallpaper-item {
+      aspect-ratio: 16/10;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      border: 2px solid transparent;
+    }
+
+    .wallpaper-item:hover {
+      transform: scale(1.05);
+    }
+
+    .wallpaper-item.active {
+      border-color: var(--theme-color);
+    }
+
+    .wallpaper-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .wallpaper-item .check-icon {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      width: 20px;
+      height: 20px;
+      background: var(--theme-color);
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .wallpaper-item.active .check-icon {
+      display: flex;
+    }
+
+    /* 便签弹窗 */
+    .notes-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 700px;
+      max-height: 80vh;
+      background: var(--bg-darker);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      z-index: 1001;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notes-modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .notes-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .notes-modal-title {
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .notes-modal-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .notes-modal-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .notes-modal-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--text-secondary);
+    }
+
+    .notes-modal-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .notes-list {
+      width: 200px;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .notes-list-item {
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .notes-list-item:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .notes-list-item.active {
+      background: rgba(0, 212, 255, 0.1);
+      border-left: 2px solid var(--theme-color);
+    }
+
+    .notes-list-item-title {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .notes-list-item-date {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .notes-add-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: rgba(0, 212, 255, 0.1);
+      border: none;
+      border-radius: 8px;
+      color: var(--theme-color);
+      cursor: pointer;
+      width: 100%;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      margin-bottom: 12px;
+    }
+
+    .notes-add-btn:hover {
+      background: rgba(0, 212, 255, 0.2);
+    }
+
+    .notes-editor {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notes-editor-placeholder {
+      color: var(--text-muted);
+      text-align: center;
+      padding: 40px;
+    }
+
+    .notes-editor textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      line-height: 1.8;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .notes-editor textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* 添加站点弹窗 */
+    .add-site-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 400px;
+      background: var(--bg-darker);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 24px;
+      z-index: 1001;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .add-site-modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .add-site-modal h3 {
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus {
+      border-color: var(--theme-color);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--theme-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: var(--text-secondary);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    /* 一言设置弹窗 */
+    .hitokoto-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 500px;
+      background: var(--bg-darker);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 24px;
+      z-index: 1001;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .hitokoto-modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .hitokoto-list {
+      margin: 16px 0;
+    }
+
+    .hitokoto-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-card);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .hitokoto-item-text {
+      flex: 1;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .hitokoto-item-delete {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .hitokoto-item-delete:hover {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+
+    .hitokoto-add-form {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .hitokoto-add-form input {
+      flex: 1;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      outline: none;
+    }
+
+    .hitokoto-add-form button {
+      padding: 10px 20px;
+      background: var(--theme-color);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* 隐藏文件输入 */
+    .hidden-input {
+      display: none;
+    }
+
+    /* 下拉选择器 */
+    .select-wrapper {
+      position: relative;
+    }
+
+    .custom-select {
+      padding: 8px 32px 8px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 0.9rem;
+      appearance: none;
+      outline: none;
+    }
+
+    .select-wrapper::after {
+      content: '▼';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* 搜索历史 */
+    .search-history {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      background: var(--bg-darker);
+      backdrop-filter: blur(20px);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 8px 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+      z-index: 999;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .search-history.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .search-history-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--text-secondary);
+    }
+
+    .search-history-item:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .search-history-item svg {
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+    }
+
+    .search-history-empty {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .clock {
+        font-size: 3.5rem;
+      }
+
+      .workspace-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .wallpaper-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .dock-bar {
+        bottom: 20px;
+        padding: 8px 12px;
+      }
+
+      .dock-item {
+        width: 38px;
+        height: 38px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 背景层 -->
+  <div class="background-layer" id="backgroundLayer"></div>
+  <div class="vignette-layer" id="vignetteLayer"></div>
+
+  <!-- 固定便签 -->
+  <div class="pinned-notes" id="pinnedNotes"></div>
+
+  <!-- 右上角按钮 -->
+  <div class="top-right-buttons">
+    <button class="top-btn" id="userBtn" title="用户">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </button>
+    <button class="top-btn" id="settingsBtn" title="设置">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- 主容器 -->
+  <div class="main-container">
+    <!-- 时钟 -->
+    <section class="clock-section">
+      <div class="clock" id="clock">00:00:00</div>
+    </section>
+
+    <!-- 搜索框 -->
+    <section class="search-section">
+      <div class="search-container">
+        <div class="search-box">
+          <button class="search-engine-btn" id="engineBtn">
+            <span class="search-engine-icon" id="currentEngineIcon">🐾</span>
+          </button>
+          <input type="text" class="search-input" id="searchInput" placeholder="搜索" autocomplete="off">
+          <button class="search-submit-btn" id="searchSubmitBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 搜索引擎下拉 -->
+        <div class="search-engine-dropdown" id="engineDropdown">
+          <div class="engine-option active" data-engine="baidu" data-icon="🐾" data-url="https://www.baidu.com/s?wd=">
+            <span class="engine-option-icon">🐾</span>
+            <span class="engine-option-name">百度</span>
+            <span class="engine-option-shortcut">Alt+1</span>
+          </div>
+          <div class="engine-option" data-engine="bing" data-icon="🅱️" data-url="https://www.bing.com/search?q=">
+            <span class="engine-option-icon">🅱️</span>
+            <span class="engine-option-name">必应</span>
+            <span class="engine-option-shortcut">Alt+2</span>
+          </div>
+          <div class="engine-option" data-engine="google" data-icon="🔍" data-url="https://www.google.com/search?q=">
+            <span class="engine-option-icon">🔍</span>
+            <span class="engine-option-name">谷歌</span>
+            <span class="engine-option-shortcut">Alt+3</span>
+          </div>
+          <div class="engine-option" data-engine="yandex" data-icon="🔴" data-url="https://yandex.com/search/?text=">
+            <span class="engine-option-icon">🔴</span>
+            <span class="engine-option-name">Yandex</span>
+            <span class="engine-option-shortcut">Alt+4</span>
+          </div>
+          <div class="engine-dropdown-divider"></div>
+          <div class="engine-settings-option" id="engineSettingsBtn">
+            <span class="engine-option-icon">⚙️</span>
+            <span class="engine-option-name">搜索引擎偏好</span>
+          </div>
+        </div>
+
+        <!-- 搜索历史 -->
+        <div class="search-history" id="searchHistory"></div>
+      </div>
+    </section>
+
+    <!-- 一言 -->
+    <section class="hitokoto-section">
+      <p class="hitokoto" id="hitokoto" title="点击刷新 / 右键设置">生活明朗，万物可爱</p>
+    </section>
+  </div>
+
+  <!-- 底部快捷栏 -->
+  <div class="dock-bar" id="dockBar">
+    <div class="dock-item" data-title="应用" id="appsBtn" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+    </div>
+    <a class="dock-item" href="https://translate.google.com" target="_blank" data-title="翻译" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">文</a>
+    <a class="dock-item" href="https://chat.openai.com" target="_blank" data-title="AI 工具" style="background: linear-gradient(135deg, #10b981, #059669);">🤖</a>
+    <a class="dock-item" href="https://unsplash.com" target="_blank" data-title="图片" style="background: linear-gradient(135deg, #f43f5e, #e11d48);">🖼️</a>
+    <div class="dock-item" data-title="便签" id="notesBtn" style="background: linear-gradient(135deg, #f59e0b, #d97706);">📝</div>
+    <a class="dock-item" href="https://www.icloud.com" target="_blank" data-title="iCloud" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">☁️</a>
+    <a class="dock-item" href="mailto:" data-title="邮件" style="background: linear-gradient(135deg, #64748b, #475569);">✉️</a>
+    <a class="dock-item" href="https://www.youtube.com" target="_blank" data-title="YouTube" style="background: linear-gradient(135deg, #ef4444, #dc2626);">▶️</a>
+    <a class="dock-item" href="https://drive.google.com" target="_blank" data-title="云盘" style="background: linear-gradient(135deg, #22c55e, #16a34a);">📁</a>
+    <div class="dock-item" data-title="深色主题" id="themeToggleBtn" style="background: linear-gradient(135deg, #1e1b4b, #312e81);">🌙</div>
+  </div>
+
+  <!-- 工作区域覆盖层 -->
+  <div class="workspace-overlay" id="workspaceOverlay">
+    <div class="workspace-clock" id="workspaceClock">00:00:00</div>
+    <div class="workspace-grid" id="workspaceGrid"></div>
+  </div>
+
+  <!-- 设置面板 -->
+  <div class="settings-overlay" id="settingsOverlay"></div>
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-header">
+      <h2 class="settings-title">常规设置</h2>
+      <button class="settings-close" id="settingsClose">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="settings-content">
+      <!-- 搜索设置 -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">搜索</h3>
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-label">自动清空搜索栏</div>
+          </div>
+          <div class="toggle active" id="autoClearToggle"></div>
+        </div>
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-label">搜索历史记录</div>
+          </div>
+          <div class="toggle active" id="searchHistoryToggle"></div>
+        </div>
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-label">在搜索栏按 Tab / Shift + Tab 键时，切换到</div>
+          </div>
+          <div class="select-wrapper">
+            <select class="custom-select" id="tabBehaviorSelect">
+              <option value="engine">列表中的下一个 / 上一个搜索引擎</option>
+              <option value="history">搜索历史</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 导航设置 -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">导航</h3>
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-label">捷径坞</div>
+          </div>
+          <div class="toggle active" id="dockToggle"></div>
+        </div>
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-label">在新页面打开搜索结果和网站捷径</div>
+          </div>
+          <div class="toggle active" id="newTabToggle"></div>
+        </div>
+      </div>
+
+      <!-- 颜色设置 -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">颜色</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">主题色</div>
+          <div class="color-options">
+            <div class="color-option green" data-color="#4ade80"></div>
+            <div class="color-option cyan active" data-color="#00d4ff"></div>
+            <div class="color-option purple" data-color="#a78bfa"></div>
+            <div class="color-option pink" data-color="#f472b6"></div>
+            <div class="color-option blue" data-color="#3b82f6"></div>
+          </div>
+        </div>
+        <div class="settings-item">
+          <div class="settings-item-label">深色主题</div>
+          <div class="select-wrapper">
+            <select class="custom-select" id="darkModeSelect">
+              <option value="on">开启</option>
+              <option value="off">关闭</option>
+              <option value="auto">跟随系统</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-item">
+          <div class="settings-item-label">为壁纸应用暗角滤镜</div>
+          <div class="toggle active" id="vignetteToggle"></div>
+        </div>
+      </div>
+
+      <!-- 壁纸设置 -->
+      <div class="settings-section wallpaper-section">
+        <h3 class="settings-section-title">壁纸偏好</h3>
+        <div class="wallpaper-upload-area">
+          <div class="wallpaper-preview" id="wallpaperPreview">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="m21 15-5-5L5 21"/>
+            </svg>
+          </div>
+          <div class="wallpaper-upload-info">
+            <h4>将您喜爱的图片或视频设为壁纸。</h4>
+            <p>支持选择多张本地图片，起始页每次加载时随机显示一张。</p>
+            <div class="wallpaper-actions">
+              <button class="wallpaper-action-btn" id="uploadWallpaperBtn">
+                <span>📁</span> 本地图片
+              </button>
+              <button class="wallpaper-action-btn" id="urlWallpaperBtn">
+                <span>🔗</span> 在线图片链接
+              </button>
+            </div>
+          </div>
+        </div>
+        <h4 style="color: var(--text-secondary); margin-bottom: 12px;">默认壁纸</h4>
+        <div class="wallpaper-grid" id="wallpaperGrid"></div>
+      </div>
+
+      <!-- 一言设置 -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">一言设置</h3>
+        <div class="settings-item" id="hitokotoSettingsBtn" style="cursor: pointer;">
+          <div class="settings-item-label">管理一言句子</div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 便签弹窗 -->
+  <div class="notes-modal" id="notesModal">
+    <div class="notes-modal-header">
+      <span class="notes-modal-title">便签</span>
+      <div class="notes-modal-actions">
+        <button class="notes-modal-btn" id="pinNoteBtn" title="固定到主屏幕">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>
+          </svg>
+        </button>
+        <button class="notes-modal-btn" id="expandNoteBtn" title="全屏">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+        </button>
+        <button class="notes-modal-btn" id="deleteNoteBtn" title="删除">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+        <button class="notes-modal-btn" id="closeNotesBtn" title="关闭">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="notes-modal-body">
+      <div class="notes-list" id="notesList">
+        <button class="notes-add-btn" id="addNoteBtn">
+          <span>+</span> 新便签
+        </button>
+      </div>
+      <div class="notes-editor" id="notesEditor">
+        <div class="notes-editor-placeholder">在此键入以创建新的便签</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加站点弹窗 -->
+  <div class="add-site-modal" id="addSiteModal">
+    <h3>添加网站</h3>
+    <div class="form-group">
+      <label>网站名称</label>
+      <input type="text" id="siteNameInput" placeholder="例如：GitHub">
+    </div>
+    <div class="form-group">
+      <label>网站地址</label>
+      <input type="text" id="siteUrlInput" placeholder="https://github.com">
+    </div>
+    <div class="form-group">
+      <label>图标 (emoji 或文字)</label>
+      <input type="text" id="siteIconInput" placeholder="🐙" maxlength="2">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" id="cancelAddSite">取消</button>
+      <button class="btn btn-primary" id="confirmAddSite">添加</button>
+    </div>
+  </div>
+
+  <!-- 一言设置弹窗 -->
+  <div class="hitokoto-modal" id="hitokotoModal">
+    <h3>管理一言句子</h3>
+    <div class="hitokoto-list" id="hitokotoList"></div>
+    <div class="hitokoto-add-form">
+      <input type="text" id="newHitokotoInput" placeholder="添加新的一言...">
+      <button id="addHitokotoBtn">添加</button>
+    </div>
+    <div class="form-actions" style="margin-top: 20px;">
+      <button class="btn btn-secondary" id="closeHitokotoModal" style="flex: 0 0 auto;">关闭</button>
+    </div>
+  </div>
+
+  <!-- 隐藏的文件输入 -->
+  <input type="file" id="wallpaperFileInput" class="hidden-input" accept="image/*" multiple>
+
+  <script>
+    // ==================== 数据存储 ====================
+    const defaultWallpapers = [
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920',
+      'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920',
+      'https://images.unsplash.com/photo-1518173946687-a4c036bc3c8f?w=1920',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920',
+      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1920',
+      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920',
+      'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=1920',
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920'
+    ];
+
+    const defaultHitokoto = [
+      '生活明朗，万物可爱',
+      '人生天地之间，若白驹过隙，忽然而已',
+      '长风破浪会有时，直挂云帆济沧海',
+      '采菊东篱下，悠然见南山',
+      '海内存知己，天涯若比邻',
+      '博观而约取，厚积而薄发',
+      '千里之行，始于足下',
+      '天行健，君子以自强不息'
+    ];
+
+    const defaultSites = [
+      { name: '翻译', url: 'https://translate.google.com', icon: '文', color: '#06b6d4' },
+      { name: 'AI 工具', url: 'https://chat.openai.com', icon: '🤖', color: '#10b981' },
+      { name: '图片', url: 'https://unsplash.com', icon: '🖼️', color: '#f43f5e' },
+      { name: '便签', url: '#notes', icon: '📝', color: '#f59e0b' },
+      { name: '空投快传', url: 'https://airportal.cn', icon: '☁️', color: '#3b82f6' },
+      { name: 'QQ 邮箱', url: 'https://mail.qq.com', icon: '✉️', color: '#f97316' },
+      { name: '云音乐', url: 'https://music.163.com', icon: '🎵', color: '#ec4899' },
+      { name: 'bilibili', url: 'https://www.bilibili.com', icon: '▶️', color: '#f43f5e' },
+      { name: '壁纸', url: 'https://unsplash.com', icon: '🖼️', color: '#ec4899' },
+      { name: '深色主题', url: '#theme', icon: '🌙', color: '#1e1b4b' },
+      { name: 'Github', url: 'https://github.com', icon: 'G', color: '#22c55e' },
+      { name: '知乎', url: 'https://www.zhihu.com', icon: '知', color: '#3b82f6' },
+      { name: 'YouTube', url: 'https://www.youtube.com', icon: 'y', color: '#ef4444' },
+      { name: 'OpenAI', url: 'https://openai.com', icon: '🤖', color: '#10b981' },
+      { name: 'HuggingFace', url: 'https://huggingface.co', icon: 'H', color: '#fbbf24' },
+    ];
+
+    // 加载存储的数据
+    function loadData(key, defaultValue) {
+      try {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : defaultValue;
+      } catch {
+        return defaultValue;
+      }
+    }
+
+    function saveData(key, data) {
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    // 状态
+    let settings = loadData('settings', {
+      autoClear: true,
+      searchHistory: true,
+      tabBehavior: 'engine',
+      showDock: true,
+      newTab: true,
+      themeColor: '#00d4ff',
+      darkMode: 'on',
+      vignette: true,
+      currentWallpaper: defaultWallpapers[2]
+    });
+
+    let sites = loadData('sites', defaultSites);
+    let hitokotoList = loadData('hitokotoList', defaultHitokoto);
+    let searchHistoryData = loadData('searchHistoryData', []);
+    let notes = loadData('notes', []);
+    let pinnedNoteIds = loadData('pinnedNoteIds', []);
+    let currentEngine = loadData('currentEngine', 'baidu');
+    let currentNoteId = null;
+
+    // ==================== 初始化 ====================
+    function init() {
+      applySettings();
+      updateClock();
+      setInterval(updateClock, 1000);
+      renderWallpaperGrid();
+      renderWorkspaceGrid();
+      renderHitokoto();
+      renderNotes();
+      renderPinnedNotes();
+      bindEvents();
+      updateEngineUI();
+    }
+
+    // ==================== 时钟 ====================
+    function updateClock() {
+      const now = new Date();
+      const time = now.toTimeString().slice(0, 8);
+      document.getElementById('clock').textContent = time;
+      const workspaceClock = document.getElementById('workspaceClock');
+      if (workspaceClock) workspaceClock.textContent = time;
+    }
+
+    // ==================== 设置应用 ====================
+    function applySettings() {
+      // 主题色
+      document.documentElement.style.setProperty('--theme-color', settings.themeColor);
+      
+      // 壁纸
+      const bgLayer = document.getElementById('backgroundLayer');
+      if (settings.currentWallpaper) {
+        bgLayer.style.backgroundImage = `url(${settings.currentWallpaper})`;
+      }
+      
+      // 暗角滤镜
+      document.getElementById('vignetteLayer').style.display = settings.vignette ? 'block' : 'none';
+      
+      // Dock
+      document.getElementById('dockBar').style.display = settings.showDock ? 'flex' : 'none';
+      
+      // 更新设置面板状态
+      updateSettingsUI();
+    }
+
+    function updateSettingsUI() {
+      // Toggle 状态
+      document.getElementById('autoClearToggle').classList.toggle('active', settings.autoClear);
+      document.getElementById('searchHistoryToggle').classList.toggle('active', settings.searchHistory);
+      document.getElementById('dockToggle').classList.toggle('active', settings.showDock);
+      document.getElementById('newTabToggle').classList.toggle('active', settings.newTab);
+      document.getElementById('vignetteToggle').classList.toggle('active', settings.vignette);
+      
+      // 选择器
+      document.getElementById('tabBehaviorSelect').value = settings.tabBehavior;
+      document.getElementById('darkModeSelect').value = settings.darkMode;
+      
+      // 颜色
+      document.querySelectorAll('.color-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.color === settings.themeColor);
+      });
+    }
+
+    // ==================== 搜索功能 ====================
+    const searchEngines = {
+      baidu: { icon: '🐾', url: 'https://www.baidu.com/s?wd=' },
+      bing: { icon: '🅱️', url: 'https://www.bing.com/search?q=' },
+      google: { icon: '🔍', url: 'https://www.google.com/search?q=' },
+      yandex: { icon: '🔴', url: 'https://yandex.com/search/?text=' }
+    };
+
+    function updateEngineUI() {
+      const engine = searchEngines[currentEngine];
+      document.getElementById('currentEngineIcon').textContent = engine.icon;
+      document.querySelectorAll('.engine-option[data-engine]').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.engine === currentEngine);
+      });
+    }
+
+    function setEngine(engineName) {
+      currentEngine = engineName;
+      saveData('currentEngine', currentEngine);
+      updateEngineUI();
+      document.getElementById('engineDropdown').classList.remove('show');
+    }
+
+    function doSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) return;
+      
+      // 保存搜索历史
+      if (settings.searchHistory) {
+        searchHistoryData = [query, ...searchHistoryData.filter(h => h !== query)].slice(0, 20);
+        saveData('searchHistoryData', searchHistoryData);
+      }
+      
+      const url = searchEngines[currentEngine].url + encodeURIComponent(query);
+      if (settings.newTab) {
+        window.open(url, '_blank');
+      } else {
+        window.location.href = url;
+      }
+      
+      if (settings.autoClear) {
+        document.getElementById('searchInput').value = '';
+      }
+    }
+
+    function showSearchHistory() {
+      if (!settings.searchHistory || searchHistoryData.length === 0) return;
+      
+      const container = document.getElementById('searchHistory');
+      container.innerHTML = searchHistoryData.map(item => `
+        <div class="search-history-item" data-query="${item}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>${item}</span>
+        </div>
+      `).join('');
+      container.classList.add('show');
+    }
+
+    // ==================== 一言 ====================
+    function renderHitokoto() {
+      const text = hitokotoList[Math.floor(Math.random() * hitokotoList.length)];
+      document.getElementById('hitokoto').textContent = text;
+    }
+
+    function renderHitokotoList() {
+      const container = document.getElementById('hitokotoList');
+      container.innerHTML = hitokotoList.map((text, index) => `
+        <div class="hitokoto-item">
+          <span class="hitokoto-item-text">${text}</span>
+          <button class="hitokoto-item-delete" data-index="${index}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // ==================== 壁纸 ====================
+    function renderWallpaperGrid() {
+      const grid = document.getElementById('wallpaperGrid');
+      grid.innerHTML = defaultWallpapers.map((url, index) => `
+        <div class="wallpaper-item ${settings.currentWallpaper === url ? 'active' : ''}" data-url="${url}">
+          <img src="${url}&w=300" alt="壁纸 ${index + 1}">
+          <div class="check-icon">✓</div>
+        </div>
+      `).join('');
+    }
+
+    function setWallpaper(url) {
+      settings.currentWallpaper = url;
+      saveData('settings', settings);
+      document.getElementById('backgroundLayer').style.backgroundImage = `url(${url})`;
+      renderWallpaperGrid();
+    }
+
+    // ==================== 工作区 ====================
+    function renderWorkspaceGrid() {
+      const grid = document.getElementById('workspaceGrid');
+      grid.innerHTML = sites.map((site, index) => {
+        if (site.url === '#notes') {
+          return `
+            <div class="workspace-item" data-action="notes">
+              <div class="workspace-item-icon" style="background: ${site.color}">${site.icon}</div>
+              <span class="workspace-item-name">${site.name}</span>
+            </div>
+          `;
+        }
+        if (site.url === '#theme') {
+          return `
+            <div class="workspace-item" data-action="theme">
+              <div class="workspace-item-icon" style="background: ${site.color}">${site.icon}</div>
+              <span class="workspace-item-name">${site.name}</span>
+            </div>
+          `;
+        }
+        return `
+          <a class="workspace-item" href="${site.url}" target="${settings.newTab ? '_blank' : '_self'}">
+            <div class="workspace-item-icon" style="background: ${site.color}">${site.icon}</div>
+            <span class="workspace-item-name">${site.name}</span>
+          </a>
+        `;
+      }).join('') + `
+        <div class="workspace-item workspace-add-item" id="addSiteBtn">
+          <span class="workspace-add-icon">+</span>
+        </div>
+      `;
+    }
+
+    // ==================== 便签 ====================
+    function renderNotes() {
+      const list = document.getElementById('notesList');
+      const addBtn = list.querySelector('.notes-add-btn');
+      
+      // 清除旧的便签项
+      list.querySelectorAll('.notes-list-item').forEach(el => el.remove());
+      
+      // 添加便签
+      notes.forEach(note => {
+        const div = document.createElement('div');
+        div.className = `notes-list-item ${currentNoteId === note.id ? 'active' : ''}`;
+        div.dataset.id = note.id;
+        div.innerHTML = `
+          <div class="notes-list-item-title">${note.title || '无标题'}</div>
+          <div class="notes-list-item-date">${note.date}</div>
+        `;
+        addBtn.after(div);
+      });
+    }
+
+    function renderPinnedNotes() {
+      const container = document.getElementById('pinnedNotes');
+      const pinnedNotes = notes.filter(n => pinnedNoteIds.includes(n.id));
+      
+      container.innerHTML = pinnedNotes.map(note => `
+        <div class="pinned-note" data-id="${note.id}">
+          <div class="pinned-note-title">${note.title || '无标题'}</div>
+          <div class="pinned-note-content">${note.content.slice(0, 50)}${note.content.length > 50 ? '...' : ''}</div>
+          <div class="pinned-note-date">${note.date}</div>
+        </div>
+      `).join('');
+    }
+
+    function selectNote(id) {
+      currentNoteId = id;
+      const note = notes.find(n => n.id === id);
+      const editor = document.getElementById('notesEditor');
+      
+      if (note) {
+        editor.innerHTML = `<textarea placeholder="在此键入...">${note.content}</textarea>`;
+        editor.querySelector('textarea').addEventListener('input', (e) => {
+          note.content = e.target.value;
+          note.title = e.target.value.split('\n')[0].slice(0, 20) || '无标题';
+          saveData('notes', notes);
+          renderNotes();
+          renderPinnedNotes();
+        });
+      } else {
+        editor.innerHTML = '<div class="notes-editor-placeholder">在此键入以创建新的便签</div>';
+      }
+      
+      renderNotes();
+    }
+
+    function addNote() {
+      const now = new Date();
+      const note = {
+        id: Date.now().toString(),
+        title: '新便签',
+        content: '',
+        date: `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+      };
+      notes.unshift(note);
+      saveData('notes', notes);
+      selectNote(note.id);
+    }
+
+    function deleteNote() {
+      if (!currentNoteId) return;
+      notes = notes.filter(n => n.id !== currentNoteId);
+      pinnedNoteIds = pinnedNoteIds.filter(id => id !== currentNoteId);
+      saveData('notes', notes);
+      saveData('pinnedNoteIds', pinnedNoteIds);
+      currentNoteId = null;
+      selectNote(null);
+      renderPinnedNotes();
+    }
+
+    function pinNote() {
+      if (!currentNoteId) return;
+      if (pinnedNoteIds.includes(currentNoteId)) {
+        pinnedNoteIds = pinnedNoteIds.filter(id => id !== currentNoteId);
+      } else {
+        pinnedNoteIds.push(currentNoteId);
+      }
+      saveData('pinnedNoteIds', pinnedNoteIds);
+      renderPinnedNotes();
+    }
+
+    // ==================== 事件绑定 ====================
+    function bindEvents() {
+      // 搜索
+      document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') doSearch();
+      });
+      document.getElementById('searchSubmitBtn').addEventListener('click', doSearch);
+      
+      // 搜索引擎切换
+      document.getElementById('engineBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('engineDropdown').classList.toggle('show');
+        document.getElementById('searchHistory').classList.remove('show');
+      });
+      
+      document.querySelectorAll('.engine-option[data-engine]').forEach(opt => {
+        opt.addEventListener('click', () => setEngine(opt.dataset.engine));
+      });
+      
+      // 搜索历史
+      document.getElementById('searchInput').addEventListener('focus', showSearchHistory);
+      document.getElementById('searchHistory').addEventListener('click', (e) => {
+        const item = e.target.closest('.search-history-item');
+        if (item) {
+          document.getElementById('searchInput').value = item.dataset.query;
+          document.getElementById('searchHistory').classList.remove('show');
+        }
+      });
+      
+      // Alt + 数字切换搜索引擎
+      document.addEventListener('keydown', (e) => {
+        if (e.altKey) {
+          const engines = ['baidu', 'bing', 'google', 'yandex'];
+          const num = parseInt(e.key);
+          if (num >= 1 && num <= 4) {
+            e.preventDefault();
+            setEngine(engines[num - 1]);
+          }
+        }
+        
+        // Tab 切换搜索引擎
+        if (e.key === 'Tab' && document.activeElement === document.getElementById('searchInput')) {
+          if (settings.tabBehavior === 'engine') {
+            e.preventDefault();
+            const engines = ['baidu', 'bing', 'google', 'yandex'];
+            const currentIndex = engines.indexOf(currentEngine);
+            const nextIndex = e.shiftKey 
+              ? (currentIndex - 1 + engines.length) % engines.length 
+              : (currentIndex + 1) % engines.length;
+            setEngine(engines[nextIndex]);
+          }
+        }
+      });
+      
+      // 点击外部关闭下拉菜单
+      document.addEventListener('click', () => {
+        document.getElementById('engineDropdown').classList.remove('show');
+        document.getElementById('searchHistory').classList.remove('show');
+      });
+      
+      // 右键打开工作区
+      document.addEventListener('contextmenu', (e) => {
+        if (!e.target.closest('.workspace-overlay') && !e.target.closest('.settings-panel') && !e.target.closest('.notes-modal')) {
+          e.preventDefault();
+          document.getElementById('workspaceOverlay').classList.add('show');
+        }
+      });
+      
+      // ESC 关闭工作区
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          document.getElementById('workspaceOverlay').classList.remove('show');
+          document.getElementById('settingsPanel').classList.remove('show');
+          document.getElementById('settingsOverlay').classList.remove('show');
+          document.getElementById('notesModal').classList.remove('show');
+          document.getElementById('addSiteModal').classList.remove('show');
+          document.getElementById('hitokotoModal').classList.remove('show');
+        }
+      });
+      
+      // 点击工作区空白关闭
+      document.getElementById('workspaceOverlay').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('workspaceOverlay')) {
+          document.getElementById('workspaceOverlay').classList.remove('show');
+        }
+      });
+      
+      // 工作区项目点击
+      document.getElementById('workspaceGrid').addEventListener('click', (e) => {
+        const item = e.target.closest('.workspace-item');
+        if (!item) return;
+        
+        if (item.dataset.action === 'notes') {
+          document.getElementById('workspaceOverlay').classList.remove('show');
+          document.getElementById('notesModal').classList.add('show');
+        } else if (item.dataset.action === 'theme') {
+          settings.darkMode = settings.darkMode === 'on' ? 'off' : 'on';
+          saveData('settings', settings);
+          // 简单切换效果
+        } else if (item.id === 'addSiteBtn') {
+          document.getElementById('addSiteModal').classList.add('show');
+        }
+      });
+      
+      // 设置面板
+      document.getElementById('settingsBtn').addEventListener('click', () => {
+        document.getElementById('settingsPanel').classList.add('show');
+        document.getElementById('settingsOverlay').classList.add('show');
+      });
+      
+      document.getElementById('settingsClose').addEventListener('click', () => {
+        document.getElementById('settingsPanel').classList.remove('show');
+        document.getElementById('settingsOverlay').classList.remove('show');
+      });
+      
+      document.getElementById('settingsOverlay').addEventListener('click', () => {
+        document.getElementById('settingsPanel').classList.remove('show');
+        document.getElementById('settingsOverlay').classList.remove('show');
+      });
+      
+      // Toggle 开关
+      document.querySelectorAll('.toggle').forEach(toggle => {
+        toggle.addEventListener('click', () => {
+          toggle.classList.toggle('active');
+          const id = toggle.id;
+          if (id === 'autoClearToggle') settings.autoClear = toggle.classList.contains('active');
+          if (id === 'searchHistoryToggle') settings.searchHistory = toggle.classList.contains('active');
+          if (id === 'dockToggle') {
+            settings.showDock = toggle.classList.contains('active');
+            document.getElementById('dockBar').style.display = settings.showDock ? 'flex' : 'none';
+          }
+          if (id === 'newTabToggle') settings.newTab = toggle.classList.contains('active');
+          if (id === 'vignetteToggle') {
+            settings.vignette = toggle.classList.contains('active');
+            document.getElementById('vignetteLayer').style.display = settings.vignette ? 'block' : 'none';
+          }
+          saveData('settings', settings);
+        });
+      });
+      
+      // 颜色选择
+      document.querySelectorAll('.color-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+          opt.classList.add('active');
+          settings.themeColor = opt.dataset.color;
+          document.documentElement.style.setProperty('--theme-color', settings.themeColor);
+          saveData('settings', settings);
+        });
+      });
+      
+      // 壁纸选择
+      document.getElementById('wallpaperGrid').addEventListener('click', (e) => {
+        const item = e.target.closest('.wallpaper-item');
+        if (item) setWallpaper(item.dataset.url);
+      });
+      
+      // 上传壁纸
+      document.getElementById('uploadWallpaperBtn').addEventListener('click', () => {
+        document.getElementById('wallpaperFileInput').click();
+      });
+      
+      document.getElementById('wallpaperFileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            setWallpaper(event.target.result);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      
+      // 便签
+      document.getElementById('notesBtn').addEventListener('click', () => {
+        document.getElementById('notesModal').classList.add('show');
+      });
+      
+      document.getElementById('appsBtn').addEventListener('click', () => {
+        document.getElementById('workspaceOverlay').classList.add('show');
+      });
+      
+      document.getElementById('closeNotesBtn').addEventListener('click', () => {
+        document.getElementById('notesModal').classList.remove('show');
+      });
+      
+      document.getElementById('addNoteBtn').addEventListener('click', addNote);
+      document.getElementById('deleteNoteBtn').addEventListener('click', deleteNote);
+      document.getElementById('pinNoteBtn').addEventListener('click', pinNote);
+      
+      document.getElementById('notesList').addEventListener('click', (e) => {
+        const item = e.target.closest('.notes-list-item');
+        if (item) selectNote(item.dataset.id);
+      });
+      
+      // 固定便签点击
+      document.getElementById('pinnedNotes').addEventListener('click', (e) => {
+        const note = e.target.closest('.pinned-note');
+        if (note) {
+          document.getElementById('notesModal').classList.add('show');
+          selectNote(note.dataset.id);
+        }
+      });
+      
+      // 一言
+      document.getElementById('hitokoto').addEventListener('click', renderHitokoto);
+      document.getElementById('hitokoto').addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        renderHitokotoList();
+        document.getElementById('hitokotoModal').classList.add('show');
+      });
+      
+      document.getElementById('hitokotoSettingsBtn').addEventListener('click', () => {
+        renderHitokotoList();
+        document.getElementById('hitokotoModal').classList.add('show');
+      });
+      
+      document.getElementById('closeHitokotoModal').addEventListener('click', () => {
+        document.getElementById('hitokotoModal').classList.remove('show');
+      });
+      
+      document.getElementById('addHitokotoBtn').addEventListener('click', () => {
+        const input = document.getElementById('newHitokotoInput');
+        const text = input.value.trim();
+        if (text) {
+          hitokotoList.push(text);
+          saveData('hitokotoList', hitokotoList);
+          input.value = '';
+          renderHitokotoList();
+        }
+      });
+      
+      document.getElementById('hitokotoList').addEventListener('click', (e) => {
+        const btn = e.target.closest('.hitokoto-item-delete');
+        if (btn) {
+          const index = parseInt(btn.dataset.index);
+          hitokotoList.splice(index, 1);
+          saveData('hitokotoList', hitokotoList);
+          renderHitokotoList();
+        }
+      });
+      
+      // 添加站点
+      document.getElementById('cancelAddSite').addEventListener('click', () => {
+        document.getElementById('addSiteModal').classList.remove('show');
+      });
+      
+      document.getElementById('confirmAddSite').addEventListener('click', () => {
+        const name = document.getElementById('siteNameInput').value.trim();
+        const url = document.getElementById('siteUrlInput').value.trim();
+        const icon = document.getElementById('siteIconInput').value.trim() || '🔗';
+        
+        if (name && url) {
+          sites.push({
+            name,
+            url: url.startsWith('http') ? url : `https://${url}`,
+            icon,
+            color: `hsl(${Math.random() * 360}, 70%, 50%)`
+          });
+          saveData('sites', sites);
+          renderWorkspaceGrid();
+          document.getElementById('addSiteModal').classList.remove('show');
+          document.getElementById('siteNameInput').value = '';
+          document.getElementById('siteUrlInput').value = '';
+          document.getElementById('siteIconInput').value = '';
+        }
+      });
+      
+      // 深色主题快捷切换
+      document.getElementById('themeToggleBtn').addEventListener('click', () => {
+        // 这里可以添加深色/浅色主题切换逻辑
+      });
+    }
+
+    // 启动
+    init();
+  </script>
+</body>
+</html>
